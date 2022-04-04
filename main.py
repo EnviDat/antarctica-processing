@@ -32,6 +32,11 @@ from pathlib import Path
 import configparser
 from datetime import datetime
 from urllib import request
+import os
+import pandas
+from dotenv import load_dotenv
+# import ftplib
+from ftplib import FTP
 
 from process_argos import read_argos, decode_argos
 
@@ -43,6 +48,7 @@ from process_argos import read_argos, decode_argos
 # from gcnet.management.commands.importers.processor.process_argos import read_argos, decode_argos
 # from gcnet.management.commands.importers.processor.process_goes import decode_goes
 # from gcnet.util.writer import Writer
+
 
 import logging
 
@@ -79,7 +85,6 @@ def get_writer_config_dict(config_parser: configparser):
     return config_dict
 
 
-# Import dependencies
 def get_input_data(config_dict: dict, local_input):
 
     # If command line localInput argument passed (with any string) assign data_file to 'data_local' from config
@@ -87,22 +92,79 @@ def get_input_data(config_dict: dict, local_input):
         data_file = config_dict['data_local']
         logger.info(f' Skipping downloading input data, using local file: {data_file}')
 
-    # Else assign data_file to file downloaded from data_url
     else:
-        data_url = config_dict['data_url']
-        data_file = config_dict['data_url_file']
+        # Load and assign FTP server credentials from .env file
+        load_dotenv('.env')
+        ftp_host = os.getenv('FTP_HOST')
+        ftp_user = os.getenv('FTP_USER')
+        ftp_password = os.getenv('FTP_PASSWORD')
 
-        # Download data from URL
-        with request.urlopen(data_url) as data:
-            content = data.read()
+        # Connect to FTP server
+        ftp_server = FTP(ftp_host, ftp_user, ftp_password)
 
-        # Save data to data_file
-        with open(data_file, 'wb') as download_file:
-            download_file.write(content)
+        ftp_names = ftp_server.nlst()
 
-        logger.info(f' Downloaded input data from URL and wrote file: {data_file}')
+        # print(ftp_names)
 
-    return data_file
+        latest_time = None
+        latest_name = None
+
+        for name in ftp_names:
+            # print(name)
+            timestamp = ftp_server.voidcmd('MDTM ' + name)
+            if (latest_time is None) or (timestamp > latest_time):
+                latest_name = name
+                latest_time = timestamp
+
+        print(latest_name)
+
+        # TODO finish extracting latest N number of files from FTP server
+
+        # ftp_files = ftp_server.dir()
+        #
+        # print(ftp_files)
+
+        # print(ftp_server.dir())
+
+        # print(ftp_server.nlst())
+
+        # ftp_files = []
+
+        # ftp_server.retrlines('NLST', ftp_files.append)
+
+        # ftp_server.retrlines('LIST', ftp_files.append)
+
+        # ftp_server.retrlines('MLSD', ftp_files.append)
+        #
+        # print(ftp_files)
+
+        # print(ftp_server.mlsd())
+
+        # Issue MLSD to get detailed listing of directory(pwd) contents
+
+        # for name, facts in ftp_server.mlsd():
+        #     print(name)
+        #     print("////")
+        #     print(facts)
+
+        # frame = pandas.DataFrame()
+
+    # # Else assign data_file to file downloaded from data_url
+    # else:
+    #     data_url = config_dict['data_url']
+    #     data_file = config_dict['data_url_file']
+    #
+    #     # Download data from URL
+    #     with request.urlopen(data_url) as data:
+    #         content = data.read()
+    #
+    #     # Save data to data_file
+    #     with open(data_file, 'wb') as download_file:
+    #         download_file.write(content)
+    #
+    #     logger.info(f' Downloaded input data from URL and wrote file: {data_file}')
+
+    # return data_file
 
 
 # def get_csv_import_command_list(config_parser: configparser, station_type: str):
@@ -159,8 +221,8 @@ def process_argos_data(config_dict: dict, local_input=None):
     # Get writer configured for the cleaner output
     # writer = Writer.new_from_dict(config_dict['writer'])
 
-    data_raw = read_argos(data, nrows=None)
-    data_decode = decode_argos(data_raw, remove_duplicate=True, sort=True)
+    # data_raw = read_argos(data, nrows=None)
+    # data_decode = decode_argos(data_raw, remove_duplicate=True, sort=True)
 
     # Decode ARGOS data
     # if station_type == 'argos':
@@ -176,7 +238,7 @@ def process_argos_data(config_dict: dict, local_input=None):
     #     raise ValueError(f'Invalid station type: {station_type}')
 
     # Convert decoded data pandas dataframe to Numpy array
-    data_array = data_decode.to_numpy()
+    # data_array = data_decode.to_numpy()
 
     # Clean data and write csv and json files
     # stations_config_path = 'gcnet/config/stations.ini'
@@ -229,7 +291,7 @@ def main(args=None):
         config_dict['writer'] = get_writer_config_dict(config)
 
         local_input = None
-        # Assign local_input if commandline option localInput is passed
+        # If commandline option localInput is passed assign local_input
         if args.localInput:
             local_input = args.localInput
 
