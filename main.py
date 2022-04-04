@@ -37,6 +37,7 @@ import pandas
 from dotenv import load_dotenv
 # import ftplib
 from ftplib import FTP
+from operator import itemgetter
 
 from process_argos import read_argos, decode_argos
 
@@ -92,6 +93,7 @@ def get_input_data(config_dict: dict, local_input):
         data_file = config_dict['data_local']
         logger.info(f' Skipping downloading input data, using local file: {data_file}')
 
+    # Else retreive data from FTP server
     else:
         # Load and assign FTP server credentials from .env file
         load_dotenv('.env')
@@ -102,50 +104,31 @@ def get_input_data(config_dict: dict, local_input):
         # Connect to FTP server
         ftp_server = FTP(ftp_host, ftp_user, ftp_password)
 
+        # Get a list of names of files on FTP server
         ftp_names = ftp_server.nlst()
 
-        # print(ftp_names)
-
-        latest_time = None
-        latest_name = None
-
+        # Assign ftp_source_list to dictionaries of names and timestamps of FTP server files
+        ftp_source_list = []
         for name in ftp_names:
-            # print(name)
-            timestamp = ftp_server.voidcmd('MDTM ' + name)
-            if (latest_time is None) or (timestamp > latest_time):
-                latest_name = name
-                latest_time = timestamp
+            timestamp = ftp_server.voidcmd(f'MDTM {name}')[4:].strip()
+            ftp_source_list.append({'name': name, 'timestamp': timestamp})
 
-        print(latest_name)
+        # Sort list in descending order by timestamp
+        ftp_list_sorted_desc = sorted(ftp_source_list, key=itemgetter('timestamp'), reverse=True)
+
+        # TODO add validator that makes sure 'ftp_downloads_number' can be converted to integer
+        # Assign list of most recently modified filed on FTP server
+        ftp_downloads_number = int(config_dict['ftp_downloads_number'])
+        ftp_list = ftp_list_sorted_desc[:ftp_downloads_number]
+        print(ftp_list)
+
+        test_file = 'input_ftp/IPFAO_ADX_15876_20220404110005_449_1.TXT'
+
+        with open(test_file, "wb") as file:
+            # ftp_server.retrbinary(test_file, file.write)
+            ftp_server.retrbinary(f"RETR IPFAO_ADX_15876_20220404110005_449_1.TXT", file.write)
 
         # TODO finish extracting latest N number of files from FTP server
-
-        # ftp_files = ftp_server.dir()
-        #
-        # print(ftp_files)
-
-        # print(ftp_server.dir())
-
-        # print(ftp_server.nlst())
-
-        # ftp_files = []
-
-        # ftp_server.retrlines('NLST', ftp_files.append)
-
-        # ftp_server.retrlines('LIST', ftp_files.append)
-
-        # ftp_server.retrlines('MLSD', ftp_files.append)
-        #
-        # print(ftp_files)
-
-        # print(ftp_server.mlsd())
-
-        # Issue MLSD to get detailed listing of directory(pwd) contents
-
-        # for name, facts in ftp_server.mlsd():
-        #     print(name)
-        #     print("////")
-        #     print(facts)
 
         # frame = pandas.DataFrame()
 
