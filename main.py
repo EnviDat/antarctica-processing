@@ -90,8 +90,9 @@ def get_input_data(config_dict: dict, local_input):
 
     # If command line localInput argument passed (with any string) assign data_file to 'data_local' from config
     if local_input:
-        data_file = config_dict['data_local']
-        logger.info(f' Skipping downloading input data, using local file: {data_file}')
+        # TODO test this option
+        data_files = [config_dict['data_local']]
+        logger.info(f' Skipping downloading input data, using local file(s): {data_files}')
 
     # Else retreive data from FTP server
     else:
@@ -117,38 +118,26 @@ def get_input_data(config_dict: dict, local_input):
         ftp_list_sorted_desc = sorted(ftp_source_list, key=itemgetter('timestamp'), reverse=True)
 
         # TODO add validator that makes sure 'ftp_downloads_number' can be converted to integer
-        # Assign list of most recently modified filed on FTP server
+        # Assign list of 'ftp_downloads_number' (from config) recently modified files on FTP server
         ftp_downloads_number = int(config_dict['ftp_downloads_number'])
         ftp_list = ftp_list_sorted_desc[:ftp_downloads_number]
-        print(ftp_list)
 
-        test_file = 'input_ftp/IPFAO_ADX_15876_20220404110005_449_1.TXT'
+        # Assign list of file names to download
+        download_list = []
+        for dict_item in ftp_list:
+            download_list.append(dict_item['name'])
 
-        with open(test_file, "wb") as file:
-            # ftp_server.retrbinary(test_file, file.write)
-            ftp_server.retrbinary(f"RETR IPFAO_ADX_15876_20220404110005_449_1.TXT", file.write)
+        # Download FTP files and write to input_ftp directory
+        for download in download_list:
+            with open(f'input_ftp/{download}', "wb") as file:
+                ftp_server.retrbinary(f'RETR {download}', file.write)
 
-        # TODO finish extracting latest N number of files from FTP server
+        logger.info(f' Downloaded input data from FTP server and wrote file(s): {download_list}')
 
-        # frame = pandas.DataFrame()
+        # Append file directory 'input_ftp' to downloaded files
+        data_files = [f'input_ftp/{i}' for i in download_list]
 
-    # # Else assign data_file to file downloaded from data_url
-    # else:
-    #     data_url = config_dict['data_url']
-    #     data_file = config_dict['data_url_file']
-    #
-    #     # Download data from URL
-    #     with request.urlopen(data_url) as data:
-    #         content = data.read()
-    #
-    #     # Save data to data_file
-    #     with open(data_file, 'wb') as download_file:
-    #         download_file.write(content)
-    #
-    #     logger.info(f' Downloaded input data from URL and wrote file: {data_file}')
-
-    # return data_file
-
+        return data_files
 
 # def get_csv_import_command_list(config_parser: configparser, station_type: str):
 #
