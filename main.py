@@ -193,9 +193,21 @@ def process_argos_data(config_dict: dict, local_input=None):
     # Get writer configured for the cleaner output
     # writer = Writer.new_from_dict(config_dict['writer'])
 
+    # Assign frames to list of pandas dataframes produced for each file in data
+    frames = []
+    for file in data:
+        data_raw = read_argos(file, nrows=None)
+        frames.append(data_raw)
+
+    # Assign argos_dataframe to concatenated dataframes
+    argos_dataframe = pandas.concat(frames)
+
+    data_decode = decode_argos(argos_dataframe, remove_duplicate=True, sort=True)
+    # print(argos_dataframe)
+
     # data_raw = read_argos(data, nrows=None)
     # data_decode = decode_argos(data_raw, remove_duplicate=True, sort=True)
-
+  
     # Decode ARGOS data
     # if station_type == 'argos':
     #     data_raw = read_argos(data, nrows=None)
@@ -209,6 +221,7 @@ def process_argos_data(config_dict: dict, local_input=None):
     #     logger.error(f' Invalid station type: {station_type}')
     #     raise ValueError(f'Invalid station type: {station_type}')
 
+    # TODO continue refactoring from this point
     # Convert decoded data pandas dataframe to Numpy array
     # data_array = data_decode.to_numpy()
 
