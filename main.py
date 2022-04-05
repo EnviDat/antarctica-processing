@@ -43,10 +43,10 @@ from process_argos import read_argos, decode_argos
 
 # import subprocess
 
-# from gcnet.management.commands.importers.processor.cleaner import CleanerFactory
+from cleaner import CleanerFactory
 # from gcnet.management.commands.importers.processor.process_argos import read_argos, decode_argos
 # from gcnet.management.commands.importers.processor.process_goes import decode_goes
-# from gcnet.util.writer import Writer
+from writer import Writer
 
 
 import logging
@@ -191,7 +191,7 @@ def process_argos_data(config_dict: dict, local_input=None):
     data = get_input_data(config_dict, local_input)
 
     # Get writer configured for the cleaner output
-    # writer = Writer.new_from_dict(config_dict['writer'])
+    writer = Writer.new_from_dict(config_dict['writer'])
 
     # Assign frames to list of pandas dataframes produced for each file in data
     frames = []
@@ -223,21 +223,21 @@ def process_argos_data(config_dict: dict, local_input=None):
     #     logger.error(f' Invalid station type: {station_type}')
     #     raise ValueError(f'Invalid station type: {station_type}')
 
-    # TODO continue refactoring from this point
     # Convert decoded data pandas dataframe to Numpy array
-    # data_array = data_decode.to_numpy()
+    data_array = data_decode.to_numpy()
 
     # Clean data and write csv and json files
-    # stations_config_path = 'gcnet/config/stations.ini'
-    # cleaner = CleanerFactory.get_cleaner(station_type, stations_config_path, writer)
-    #
-    # if not cleaner:
-    #     logger.error(f'No cleaner exists for station type: {station_type}')
-    #     raise ValueError(f'No cleaner exists for station type: {station_type}')
+    stations_config_path = 'config/stations.ini'
+    station_type = 'argos'
+    cleaner = CleanerFactory.get_cleaner(station_type, stations_config_path, writer)
+
+    if not cleaner:
+        logger.error(f'No cleaner exists for station type: {station_type}')
+        raise ValueError(f'No cleaner exists for station type: {station_type}')
 
     # Clean Numpy array data by applying basic filters
     # Cleaner also writes csv and json files
-    # cleaner.clean(data_array)
+    cleaner.clean(data_array)
 
     return
 
