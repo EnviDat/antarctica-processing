@@ -371,7 +371,7 @@ class ArgosCleaner(Cleaner):
     def write_nead(cleaned_data, station_num):
 
         # TODO pass csv_file_path from config
-        filename = Path(f'output/{str(station_num)}NEAD.csv')   # TODO remove 'NEAD'
+        filename = Path(f'output/{str(station_num)}.csv')
 
         # TODO get NEAD header
 
