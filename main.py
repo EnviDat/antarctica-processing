@@ -198,6 +198,7 @@ def main(args=None):
 
         # Get config_dict configured for 'argos'
         config_dict = dict(config.items('argos'))
+        # TODO see if line below still needed, update config file
         config_dict['writer'] = get_writer_config_dict(config)
 
         local_input = None
