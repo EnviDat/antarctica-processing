@@ -31,7 +31,6 @@ import argparse
 from pathlib import Path
 import configparser
 from datetime import datetime
-from urllib import request
 import os
 from dotenv import load_dotenv
 from ftplib import FTP
@@ -131,10 +130,11 @@ def get_input_data(config_dict: dict, local_input):
             with open(f'input_ftp/{download}', "wb") as file:
                 ftp_server.retrbinary(f'RETR {download}', file.write)
 
-        logger.info(f' Downloaded input data from FTP server and wrote file(s): {download_list}')
+        # logger.info(f' Downloaded input data from FTP server and wrote file(s): {download_list}')
+        logger.info(f' Downloaded input data from FTP server and wrote {ftp_downloads_number} most recent file(s)')
 
-        # Append file directory 'input_ftp' to downloaded files
-        data_files = [f'input_ftp/{i}' for i in download_list]
+        # Append file directory 'input_ftp' to downloaded files, exclude files with name 'log.txt'
+        data_files = [f'input_ftp/{i}' for i in download_list if not i == 'log.txt']
 
         return data_files
 
@@ -190,8 +190,6 @@ def process_argos_data(config_dict: dict, local_input=None):
     # Get input data
     data = get_input_data(config_dict, local_input)
 
-    # data_raw = read_argos(data.read(), nrows=None)
-
     # Get writer configured for the cleaner output
     # writer = Writer.new_from_dict(config_dict['writer'])
 
@@ -204,9 +202,10 @@ def process_argos_data(config_dict: dict, local_input=None):
 
     # Assign argos_dataframe to concatenated dataframes produced from individual files
     argos_dataframe = pandas.concat(frames)
-    print(argos_dataframe)
+    # print(argos_dataframe)
 
-    # data_decode = decode_argos(argos_dataframe, remove_duplicate=True, sort=True)
+    data_decode = decode_argos(argos_dataframe, remove_duplicate=True, sort=True)
+    # print(data_decode)
 
     # data_raw = read_argos(data, nrows=None)
     # data_decode = decode_argos(data_raw, remove_duplicate=True, sort=True)
@@ -223,18 +222,6 @@ def process_argos_data(config_dict: dict, local_input=None):
     # else:
     #     logger.error(f' Invalid station type: {station_type}')
     #     raise ValueError(f'Invalid station type: {station_type}')
-
-    # Load and assign FTP server credentials from .env file
-    # load_dotenv('.env')
-    # ftp_host = os.getenv('FTP_HOST')
-    # ftp_user = os.getenv('FTP_USER')
-    # ftp_password = os.getenv('FTP_PASSWORD')
-    #
-    # # with pysftp.Connection(ftp_host, ftp_user, ftp_password) as conn:
-    # with pysftp.Connection(ftp_host, ftp_user, ftp_password) as conn:
-    #     with conn.open("IPFAO_ADX_15876_20220404090003_447_1.TXT", "r") as f:
-    #         # df = pd.read_csv(f)
-    #         print(f)
 
     # TODO continue refactoring from this point
     # Convert decoded data pandas dataframe to Numpy array

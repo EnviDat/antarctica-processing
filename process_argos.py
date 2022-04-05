@@ -20,7 +20,7 @@ def read_argos(file, nrows):
     :return: a pandas dataframe, with 24 columns
     """
 
-    logger.info(f' Reading and processing {file}...')
+    # logger.info(f' Reading and processing {file}...')
 
     # Set up the column width, column names and the timestamp split
     columns = [(0, 6), (6, 28), (28, 39), (39, 52), (52, 65), (65, -1)]
@@ -119,8 +119,6 @@ def decode_argos(df, remove_duplicate=True, sort=True):
     if sort:
         # df = df.sort_values(by=['Station', 'v_1', 'Year', 'Month', 'Day', 'Hours', 'Minutes', 'Seconds'],
         #                     ascending=True)
-        # TODO figure out best way to sort values for testing while comparing to Fortran .dat output
-        # TEST
         df = df.sort_values(by=['Year', 'Month', 'Day', 'Station', 'Hours', 'Minutes', 'Seconds'],
                             ascending=True)
 
