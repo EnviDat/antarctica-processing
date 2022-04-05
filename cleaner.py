@@ -7,7 +7,6 @@ from datetime import datetime
 from writer import Writer
 
 
-# TODO check if logging needs to be reestablished
 import logging
 
 logging.basicConfig()

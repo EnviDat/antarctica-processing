@@ -38,16 +38,8 @@ from operator import itemgetter
 import pandas
 
 from process_argos import read_argos, decode_argos
-
-# import multiprocessing
-
-# import subprocess
-
 from cleaner import ArgosCleaner
-# from gcnet.management.commands.importers.processor.process_argos import read_argos, decode_argos
-# from gcnet.management.commands.importers.processor.process_goes import decode_goes
 from writer import Writer
-
 
 import logging
 
@@ -65,7 +57,6 @@ def get_parser():
 
 
 def read_config(config_path: str):
-
     config_file = Path(config_path)
     config = configparser.ConfigParser()
     config.read(config_file)
@@ -85,7 +76,6 @@ def get_writer_config_dict(config_parser: configparser):
 
 
 def get_input_data(config_dict: dict, local_input):
-
     # If command line localInput argument passed (with any string) assign data_file to 'data_local' from config
     if local_input:
         # TODO test this option
@@ -138,52 +128,7 @@ def get_input_data(config_dict: dict, local_input):
 
         return data_files
 
-# def get_csv_import_command_list(config_parser: configparser, station_type: str):
-#
-#     # Load stations configuration file and assign it to stations_config
-#     stations_config = config_parser
-#
-#     # Assign variable to contain command list
-#     commands = []
-#
-#     # Assign variables to stations_config values and loop through each station in stations_config, create list of
-#     # command strings to run csv imports for each station
-#     for section in stations_config.sections():
-#
-#         # Check config key 'active' if data for station should be processed
-#         # A value of 'True' means that station data will be processed
-#         # Any other value means that station data will not be processed
-#         if stations_config.get(section, 'active') == 'True' and stations_config.get(section, 'type') == station_type:
-#
-#             csv_input = stations_config.get(section, 'csv_input')
-#             model = stations_config.get(section, 'model')
-#             csv_data = stations_config.get(section, 'csv_data_dir')
-#
-#             # Previous version used 'import_data' management command to import data
-#             # csv_temporary = stations_config.get(section, 'csv_temporary')
-#             # command_string = f'python manage.py import_data -s {csv_temporary} -c gcnet/config/stations.ini ' \
-#             #                  f'-i {csv_data}/{csv_input} -m {model} -f True'
-#
-#             # Management command 'import_csv' will be used to import processed station data stored locally
-#             # into corresponding database model
-#             command_string = f'python manage.py import_csv -s local -i {csv_data}/{csv_input} -a gcnet -m {model}'
-#
-#             commands.append(command_string)
-#
-#     return commands
 
-
-# def execute_commands(commands_list):
-#     # Iterate through commands_list and execute each command
-#     for station_command in commands_list:
-#         try:
-#             subprocess.run(station_command, shell=True, check=True, stdout=subprocess.PIPE, universal_newlines=True)
-#         except subprocess.CalledProcessError:
-#             logger.error(f'Could not run command: {station_command}')
-#             continue
-
-
-# TODO import functions and any needed dependencies
 # TODO clean up temporary downloaded files
 def process_argos_data(config_dict: dict, local_input=None):
 
@@ -197,31 +142,16 @@ def process_argos_data(config_dict: dict, local_input=None):
     frames = []
     for file in data:
         file_dataframe = read_argos(file, nrows=None)
-        # print(file_dataframe)
         frames.append(file_dataframe)
 
     # Assign argos_dataframe to concatenated dataframes produced from individual files
     argos_dataframe = pandas.concat(frames)
-    # print(argos_dataframe)
 
+    # Convert argos_dataframe from bits to numbers and assign output dataframe to data_decode
     data_decode = decode_argos(argos_dataframe, remove_duplicate=True, sort=True)
-    # print(data_decode)
 
     # data_raw = read_argos(data, nrows=None)
     # data_decode = decode_argos(data_raw, remove_duplicate=True, sort=True)
-
-    # Decode ARGOS data
-    # if station_type == 'argos':
-    #     data_raw = read_argos(data, nrows=None)
-    #     data_decode = decode_argos(data_raw, remove_duplicate=True, sort=True)
-    #
-    # # Decode GOES data
-    # elif station_type == 'goes':
-    #     data_decode = decode_goes(data)
-    #
-    # else:
-    #     logger.error(f' Invalid station type: {station_type}')
-    #     raise ValueError(f'Invalid station type: {station_type}')
 
     # Convert decoded data pandas dataframe to Numpy array
     data_array = data_decode.to_numpy()
@@ -284,29 +214,6 @@ def main(args=None):
         # Process ARGOS data
         process_argos_data(config_dict, local_input)
 
-        # # Assign empty processes list
-        # processes = []
-        #
-        # # Start process
-        # for station_type in ['argos', 'goes']:
-        #
-        #     # Get config_dict configured for station_type
-        #     config_dict = dict(config.items(station_type))
-        #     config_dict['writer'] = get_writer_config_dict(config)
-        #
-        #     local_input = None
-        #     # Assign local_input if commandline option localInput is passed
-        #     if args.localInput:
-        #         local_input = args.localInput
-        #
-        #     # Process data from each station_type concurrently using multiprocessing
-        #     process = multiprocessing.Process(target=process_data, args=(station_type, config_dict, local_input))
-        #     processes.append(process)
-        #     process.start()
-        #
-        # for process in processes:
-        #     process.join()
-
         # TODO output data in NEAD format, one NEAD file per station
 
         # # Write short-term csv files
@@ -315,37 +222,6 @@ def main(args=None):
         # csv_writer_config = get_writer_config_dict(config)
         # csv_writer = Writer.new_from_dict(csv_writer_config)
         # csv_writer.write_csv_short_term(station_array, csv_short_days)
-
-        # # Read the stations config file
-        # stations_path = 'gcnet/config/stations.ini'
-        # stations_config = read_config(stations_path)
-        #
-        # # Check if stations_config exists
-        # if not stations_config:
-        #     logger.error("Non-valid config file: {0}".format(stations_path))
-        #     return -1
-
-        # Import csv files into Postgres database so that data are available for API
-        # logger.info(" **************************** START DATA IMPORT ITERATION **************************** ")
-        #
-        # # Assign empty import_processes list
-        # import_processes = []
-        #
-        # # Get the import commands
-        # goes_commands = get_csv_import_command_list(stations_config, 'goes')
-        # argos_commands = get_csv_import_command_list(stations_config, 'argos')
-        #
-        # # Create list with both ARGOS and GOES commands
-        # import_commands = [goes_commands, argos_commands]
-        #
-        # # Process ARGOS and GOES import commands in parallel
-        # for command_list in import_commands:
-        #     process = multiprocessing.Process(target=execute_commands, args=(command_list,))
-        #     import_processes.append(process)
-        #     process.start()
-        #
-        # for process in import_processes:
-        #     process.join()
 
         exec_time = int(time.time() - start_time)
         logger.info(f' FINISHED data processing iteration, that took {exec_time} seconds')
