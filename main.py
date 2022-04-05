@@ -33,11 +33,13 @@ import configparser
 from datetime import datetime
 from urllib import request
 import os
-import pandas
 from dotenv import load_dotenv
-# import ftplib
 from ftplib import FTP
 from operator import itemgetter
+# # import pysftp
+# from io import BytesIO
+# from io import StringIO
+# import pandas
 
 from process_argos import read_argos, decode_argos
 
@@ -88,6 +90,7 @@ def get_writer_config_dict(config_parser: configparser):
 
 def get_input_data(config_dict: dict, local_input):
 
+    # TODO determine of local_input should still be a option
     # If command line localInput argument passed (with any string) assign data_file to 'data_local' from config
     if local_input:
         # TODO test this option
@@ -131,6 +134,16 @@ def get_input_data(config_dict: dict, local_input):
         for download in download_list:
             with open(f'input_ftp/{download}', "wb") as file:
                 ftp_server.retrbinary(f'RETR {download}', file.write)
+            # TEST
+            # r = BytesIO()
+            # download_file = StringIO()
+            # download_file = BytesIO()
+            # ftp_server.retrbinary(f'RETR {download}', download_file.write)
+            # # ftp_server.retrlines(f'RETR {download}', download_file.write)
+            # download_file.seek(0)
+            # print(download_file.getvalue())
+            # return download_file
+
 
         logger.info(f' Downloaded input data from FTP server and wrote file(s): {download_list}')
 
@@ -185,29 +198,39 @@ def get_input_data(config_dict: dict, local_input):
 
 
 # TODO import functions and any needed dependencies
+# TODO clean up temporary downloaded files
 def process_argos_data(config_dict: dict, local_input=None):
 
     # Get input data
+    # data = get_input_data(config_dict, local_input)
     data = get_input_data(config_dict, local_input)
+    #
+    # data_raw = read_argos(r, nrows=None)
+
+    # test = r.read()
+    #
+    # print(test)
+
+    data_raw = read_argos(data.read(), nrows=None)
 
     # Get writer configured for the cleaner output
     # writer = Writer.new_from_dict(config_dict['writer'])
 
     # Assign frames to list of pandas dataframes produced for each file in data
-    frames = []
-    for file in data:
-        data_raw = read_argos(file, nrows=None)
-        frames.append(data_raw)
-
-    # Assign argos_dataframe to concatenated dataframes
-    argos_dataframe = pandas.concat(frames)
-
-    data_decode = decode_argos(argos_dataframe, remove_duplicate=True, sort=True)
+    # frames = []
+    # for file in data:
+    #     data_raw = read_argos(file, nrows=None)
+    #     frames.append(data_raw)
+    #
+    # # Assign argos_dataframe to concatenated dataframes
+    # argos_dataframe = pandas.concat(frames)
     # print(argos_dataframe)
+
+    # data_decode = decode_argos(argos_dataframe, remove_duplicate=True, sort=True)
 
     # data_raw = read_argos(data, nrows=None)
     # data_decode = decode_argos(data_raw, remove_duplicate=True, sort=True)
-  
+
     # Decode ARGOS data
     # if station_type == 'argos':
     #     data_raw = read_argos(data, nrows=None)
@@ -220,6 +243,18 @@ def process_argos_data(config_dict: dict, local_input=None):
     # else:
     #     logger.error(f' Invalid station type: {station_type}')
     #     raise ValueError(f'Invalid station type: {station_type}')
+
+    # Load and assign FTP server credentials from .env file
+    # load_dotenv('.env')
+    # ftp_host = os.getenv('FTP_HOST')
+    # ftp_user = os.getenv('FTP_USER')
+    # ftp_password = os.getenv('FTP_PASSWORD')
+    #
+    # # with pysftp.Connection(ftp_host, ftp_user, ftp_password) as conn:
+    # with pysftp.Connection(ftp_host, ftp_user, ftp_password) as conn:
+    #     with conn.open("IPFAO_ADX_15876_20220404090003_447_1.TXT", "r") as f:
+    #         # df = pd.read_csv(f)
+    #         print(f)
 
     # TODO continue refactoring from this point
     # Convert decoded data pandas dataframe to Numpy array
