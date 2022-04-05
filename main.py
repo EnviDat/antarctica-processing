@@ -43,7 +43,7 @@ from process_argos import read_argos, decode_argos
 
 # import subprocess
 
-from cleaner import CleanerFactory
+from cleaner import ArgosCleaner
 # from gcnet.management.commands.importers.processor.process_argos import read_argos, decode_argos
 # from gcnet.management.commands.importers.processor.process_goes import decode_goes
 from writer import Writer
@@ -228,12 +228,11 @@ def process_argos_data(config_dict: dict, local_input=None):
 
     # Clean data and write csv and json files
     stations_config_path = 'config/stations.ini'
-    station_type = 'argos'
-    cleaner = CleanerFactory.get_cleaner(station_type, stations_config_path, writer)
+    cleaner = ArgosCleaner(stations_config_path, writer)
 
     if not cleaner:
-        logger.error(f'No cleaner exists for station type: {station_type}')
-        raise ValueError(f'No cleaner exists for station type: {station_type}')
+        logger.error(f'Could not load ArgosCleaner')
+        raise ValueError(f'Could not load ArgosCleaner')
 
     # Clean Numpy array data by applying basic filters
     # Cleaner also writes csv and json files
