@@ -139,7 +139,7 @@ def process_argos_data(config_dict: dict, local_input=None):
     # Get writer configured for the cleaner output
     writer = Writer.new_from_dict(config_dict['writer'])
 
-    # Assign frames to list of pandas dataframes produced for each file in data
+    # Assign frames to list of pandas dataframes produced for each file in data by calling read_argos()
     frames = []
     for file in data:
         file_dataframe = read_argos(file, nrows=None)
@@ -150,9 +150,6 @@ def process_argos_data(config_dict: dict, local_input=None):
 
     # Convert argos_dataframe from bits to numbers and assign output dataframe to data_decode
     data_decode = decode_argos(argos_dataframe, remove_duplicate=True, sort=True)
-
-    # data_raw = read_argos(data, nrows=None)
-    # data_decode = decode_argos(data_raw, remove_duplicate=True, sort=True)
 
     # Convert decoded data pandas dataframe to Numpy array
     data_array = data_decode.to_numpy()

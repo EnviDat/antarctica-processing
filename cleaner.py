@@ -128,7 +128,7 @@ class ArgosCleaner(Cleaner):
             # Assign station config variables
             is_active = self.stations_config.get(section, "active")
 
-            # Process Argos stations
+            # Process active Argos stations
             if is_active == 'True':
 
                 # Assign station_id
@@ -137,7 +137,7 @@ class ArgosCleaner(Cleaner):
                 # Assign station_num
                 station_num = int(self.stations_config.get(section, "station_num"))
 
-                logger.info(f'ArgosCleaner: Cleaning {self.station_type} Station {station_num}...')
+                logger.info(f' Cleaning {self.station_type} Station {station_num}...')
 
                 if input_data.size != 0:
 
@@ -190,7 +190,7 @@ class ArgosCleaner(Cleaner):
                             # Log how many records removed because of duplicate time stamps
                             if len(unique_date_num_indices) < raw_num:
                                 duplicate_timestamps_num = raw_num - len(unique_date_num_indices)
-                                logger.warning(f'ArgosCleaner: Removed {duplicate_timestamps_num} entries out of:'
+                                logger.warning(f' Removed {duplicate_timestamps_num} entries out of'
                                                f' {raw_num} records from Station {station_num} '
                                                f'because of duplicate time tags')
 
@@ -355,8 +355,8 @@ class ArgosCleaner(Cleaner):
                             future_reports_num = len(np.argwhere(date_num > current_date_num))
 
                             if future_reports_num > 0:
-                                logger.warning(f'ArgosCleaner: Warning: Removed {str(future_reports_num)} entries out '
-                                               f'of: {str(len(wdata[:, 1]) + future_reports_num)} records from station '
+                                logger.warning(f' Removed {str(future_reports_num)} entries out '
+                                               f'of {str(len(wdata[:, 1]) + future_reports_num)} records from station '
                                                f'ID: {str(station_id)} Reason: time tags in future')
 
                             # Call write_csv function to write csv file with processed data
@@ -367,10 +367,10 @@ class ArgosCleaner(Cleaner):
 
                         # Else station_array is empty after removing bad dates
                         else:
-                            logger.warning(f'\t{self.station_type} Station #{station_num} does not have usable data')
+                            logger.warning(f'\t{self.station_type} Station {station_num} does not have usable data')
 
                 else:
-                    logger.warning(f'\t{self.station_type} Station #{station_num} does not have usable data')
+                    logger.warning(f'\t{self.station_type} Station {station_num} does not have usable data')
 
     # Function returns station_array which is the array for the data from each station
     # created from the combined first and second parts of the input table

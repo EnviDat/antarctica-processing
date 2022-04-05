@@ -47,8 +47,8 @@ class Writer(object):
                 np.savetxt(fid, dataset, fmt=formstr)
                 logger.info(" Successfully saved {0} entries to file: {1}".format(len(dataset[:, 1]), fid.name))
             except:
-                # TODO catch specific extensions and print their info
                 logger.error("Could not write CSV")
+        # TODO test with no data
         else:
             np.savetxt(fid, dataset)
 
@@ -58,7 +58,6 @@ class Writer(object):
         # Assign ds data structure to processed_data
         ds = pd.DataFrame(processed_data)
 
-        # TODO do I need this?
         if len(ds.index) == 1:
             return pd.DataFrame()
 
@@ -159,15 +158,12 @@ class Writer(object):
                 fsize = os.path.getsize(filename)
                 if fsize != 0:  # if station file already exists append to it
                     if len(processed_data) == 0:  # if no new data
-                        # TODO look at unused variables
                         indstart = 0
                         outdat = processed_data
                     else:  # there is some data in the array
                         with open(filename, "rb") as f:
                             lines = f.readlines()
-                        # TODO REview at the expected type warning
                         lastline = np.genfromtxt(lines[-1:], delimiter=',')  # read last line of existing file
-                        # TODO Unused??
                         lastyr = lastline[:, 1]  # get year data
                         lastjday = lastline[:, 2] + lastline[:, 3] / 24  # calculate fractional julian day
                         # number that is ascending in time, calculate last date number of old data
@@ -189,7 +185,7 @@ class Writer(object):
                 # TODO properly catch the file not found exception and return an error otherwise, print exception info
                 with open(filename, 'w') as fidn:
                     self.write_csv_file(fidn, processed_data)
-                logger.info(" No existing .csv file for station #{0} found. Writing new .csv".format(station_num))
+                logger.info(f' No existing .csv file for Station {station_num} found. Writing new .csv')
 
     # Function to write short-term csv files
     def write_csv_short_term(self, station_array: List[str], csv_short_days: int):
