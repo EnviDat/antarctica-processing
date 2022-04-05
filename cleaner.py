@@ -72,9 +72,9 @@ class Cleaner(object):
 class ArgosCleaner(Cleaner):
 
     def __init__(self, init_file_path: str, writer: Writer):
-        Cleaner.__init__(self, init_file_path, "ARGOS", writer)
+        Cleaner.__init__(self, init_file_path, 'Argos', writer)
 
-    # Function to process ARGOS numpy array generated from a decoded csv file
+    # Function to process ARGOS numpy array
     def clean(self, input_data: np.ndarray):
 
         # Assign constant for column index in input numpy array
@@ -126,12 +126,10 @@ class ArgosCleaner(Cleaner):
         for section in self.stations_config.sections():
 
             # Assign station config variables
-            station_type = self.stations_config.get(section, "type")
-            # is_active = self.stations_config.get(section, "active")
+            is_active = self.stations_config.get(section, "active")
 
             # Process Argos stations
-            # if station_type == 'argos' and is_active == 'True':
-            if station_type == 'argos':
+            if is_active == 'True':
 
                 # Assign station_id
                 station_id = int(section)

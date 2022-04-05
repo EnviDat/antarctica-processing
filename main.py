@@ -76,6 +76,7 @@ def get_writer_config_dict(config_parser: configparser):
 
 
 def get_input_data(config_dict: dict, local_input):
+
     # If command line localInput argument passed (with any string) assign data_file to 'data_local' from config
     if local_input:
         # TODO test this option
@@ -120,10 +121,10 @@ def get_input_data(config_dict: dict, local_input):
             with open(f'input_ftp/{download}', "wb") as file:
                 ftp_server.retrbinary(f'RETR {download}', file.write)
 
-        # logger.info(f' Downloaded input data from FTP server and wrote file(s): {download_list}')
         logger.info(f' Downloaded input data from FTP server and wrote {ftp_downloads_number} most recent file(s)')
 
         # Append file directory 'input_ftp' to downloaded files, exclude files with name 'log.txt'
+        # Assign downloaded file paths to data_files
         data_files = [f'input_ftp/{i}' for i in download_list if not i == 'log.txt']
 
         return data_files

@@ -28,6 +28,7 @@ class Writer(object):
     @staticmethod
     def new_from_dict(config_dict: dict):
         return Writer(
+            # TODO remove unused keys from here and from config
             csv_file_path=config_dict["csv_fileloc"],
             json_file_path=config_dict["json_fileloc"],
             new_load_flag=int(config_dict["newloadflag"]),
