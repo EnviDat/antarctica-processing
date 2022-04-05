@@ -39,7 +39,6 @@ import pandas
 
 from process_argos import read_argos, decode_argos
 from cleaner import ArgosCleaner
-from writer import Writer
 
 import logging
 
@@ -136,9 +135,6 @@ def process_argos_data(config_dict: dict, local_input=None):
     # Get input data
     data = get_input_data(config_dict, local_input)
 
-    # Get writer configured for the cleaner output
-    writer = Writer.new_from_dict(config_dict['writer'])
-
     # Assign frames to list of pandas dataframes produced for each file in data by calling read_argos()
     frames = []
     for file in data:
@@ -156,14 +152,14 @@ def process_argos_data(config_dict: dict, local_input=None):
 
     # Clean data and write csv and json files
     stations_config_path = 'config/stations.ini'
-    cleaner = ArgosCleaner(stations_config_path, writer)
+    cleaner = ArgosCleaner(stations_config_path)
 
     if not cleaner:
         logger.error(f'Could not load ArgosCleaner')
         raise ValueError(f'Could not load ArgosCleaner')
 
     # Clean Numpy array data by applying basic filters
-    # Cleaner also writes csv and json files
+    # Cleaner also writes NEAD files
     cleaner.clean(data_array)
 
     return

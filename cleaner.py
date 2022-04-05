@@ -4,8 +4,6 @@ import numpy as np
 import configparser
 from datetime import datetime
 
-from writer import Writer
-
 
 import logging
 
@@ -16,12 +14,11 @@ logger.setLevel(logging.DEBUG)
 
 class Cleaner(object):
 
-    def __init__(self, init_file_path: str, station_type: str, writer: Writer):
+    def __init__(self, init_file_path: str, station_type: str):
         self.init_file_path = init_file_path
         self.stations_config = self._get_config()
         self.no_data = float(self.stations_config.get("DEFAULT", "no_data"))
         self.station_type = station_type
-        self.writer = writer
 
     def _get_config(self):
         # Set relative path to stations config file
@@ -71,8 +68,8 @@ class Cleaner(object):
 
 class ArgosCleaner(Cleaner):
 
-    def __init__(self, init_file_path: str, writer: Writer):
-        Cleaner.__init__(self, init_file_path, 'Argos', writer)
+    def __init__(self, init_file_path: str):
+        Cleaner.__init__(self, init_file_path, 'Argos')
 
     # Function to process ARGOS numpy array
     def clean(self, input_data: np.ndarray):
@@ -359,11 +356,8 @@ class ArgosCleaner(Cleaner):
                                                f'of {str(len(wdata[:, 1]) + future_reports_num)} records from station '
                                                f'ID: {str(station_id)} Reason: time tags in future')
 
-                            # Call write_csv function to write csv file with processed data
-                            self.writer.write_csv(wdata, station_num, year, julian_day, date_num)
-
-                            # Call write_json function to write json long-term and short-term files with processed data
-                            self.writer.write_json(wdata, station_num, self.no_data)
+                            # Call write_nead function to write NEAD file with cleaned data
+                            self.write_nead(wdata, station_num)
 
                         # Else station_array is empty after removing bad dates
                         else:
@@ -371,6 +365,33 @@ class ArgosCleaner(Cleaner):
 
                 else:
                     logger.warning(f'\t{self.station_type} Station {station_num} does not have usable data')
+
+    # Function writes NEAD file for cleaned station data
+    @staticmethod
+    def write_nead(cleaned_data, station_num):
+
+        # TODO pass csv_file_path from config
+        filename = Path(f'output/{str(station_num)}NEAD.csv')   # TODO remove 'NEAD'
+
+        # TODO get NEAD header
+
+        with open(filename, 'w') as file:
+            if len(cleaned_data) != 0:
+                format_string = '%i,%4i,%.4f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,' \
+                                '%.2f,%.2f,' \
+                                '%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,' \
+                                '%.2f,%.2f,' \
+                                '%.2f,%.2f,%.2f,%.2f,%.2f '
+                try:
+                    # TODO get NEAD header
+                    np.savetxt(file, cleaned_data, fmt=format_string)
+                    logger.info(" Successfully saved {0} entries to file: {1}"
+                                .format(len(cleaned_data[:, 1]), filename))
+                except Exception as e:
+                    logger.error(f' Could not write CSV, {e}')
+            # TODO test with no data
+            else:
+                np.savetxt(file, cleaned_data)
 
     # Function returns station_array which is the array for the data from each station
     # created from the combined first and second parts of the input table
