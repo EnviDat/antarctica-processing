@@ -132,9 +132,12 @@ class ArgosCleaner(Cleaner):
                 station_id = int(section)
 
                 # Assign station_num
-                station_num = int(self.stations_config.get(section, "station_num"))
+                # TEST
+                # station_num = int(self.stations_config.get(section, "station_num"))
 
-                logger.info(f' Cleaning {self.station_type} Station {station_num}...')
+                # TEST
+                # logger.info(f' Cleaning {self.station_type} Station {station_num}...')
+                logger.info(f' Cleaning {self.station_type} Station {station_id}...')
 
                 if input_data.size != 0:
 
@@ -144,7 +147,9 @@ class ArgosCleaner(Cleaner):
                     if len(station_data) != 0:
 
                         # Assign station_array to array returns from get_station_array()
-                        station_array = self.get_station_array(station_data, station_num)
+                        # TEST
+                        # station_array = self.get_station_array(station_data, station_num)
+                        station_array = self.get_station_array(station_data, station_id)
 
                         # Filter and process station_array
                         # Assign variables used to create new array that will be used to write csv files and json files
@@ -187,9 +192,13 @@ class ArgosCleaner(Cleaner):
                             # Log how many records removed because of duplicate time stamps
                             if len(unique_date_num_indices) < raw_num:
                                 duplicate_timestamps_num = raw_num - len(unique_date_num_indices)
+                                # TEST
+                                # logger.info(f' Removed {duplicate_timestamps_num} entries out of'
+                                #                f' {raw_num} records from Station {station_num} '
+                                #                f'because of duplicate time tags')
                                 logger.info(f' Removed {duplicate_timestamps_num} entries out of'
-                                               f' {raw_num} records from Station {station_num} '
-                                               f'because of duplicate time tags')
+                                            f' {raw_num} records from Station {station_id} '
+                                            f'because of duplicate time tags')
 
                             # Assign unique_timestamp_indices to indices of a sort of unique datetime values along time
                             unique_timestamp_indices = np.argsort(unique_date_num_array)
@@ -201,7 +210,7 @@ class ArgosCleaner(Cleaner):
                             date_num = date_num[unique_timestamp_indices]  # leave only unique and sorted date_nums
 
                             # Assign station_number
-                            station_number = station_array[:, STATION_NUM_COL]
+                            # station_number = station_array[:, STATION_NUM_COL]
 
                             # Assign and calibrate incoming shortwave
                             swin = self._filter_values_calibrate(station_array[:, STATION_SWIN_COL], section,
@@ -338,9 +347,15 @@ class ArgosCleaner(Cleaner):
                             # Note this code does not currently calculate the 2 and 10 m winds and albedo,
                             # so these are columns 1-42 of the Level C data
                             # Assemble data into final level C standard form
+                            # wdata = np.column_stack(
+                            #     (station_number, year, julian_day, swin, swout, swnet, tc1, tc2, hmp1, hmp2, rh1, rh2,
+                            #      ws1, ws2, wd1, wd2, pres, sh1, sh2, snow_temp10, volts, s_winmax, s_woutmax,
+                            #      s_wnetmax, tc1max, tc2max, tc1min, tc2min, ws1max, ws2max, ws1std, ws2std, tref)
+                            # )
+                            # TEST
                             wdata = np.column_stack(
-                                (station_number, year, julian_day, swin, swout, swnet, tc1, tc2, hmp1, hmp2, rh1, rh2,
-                                 ws1, ws2, wd1, wd2, pres, sh1, sh2, snow_temp10, volts, s_winmax, s_woutmax,
+                                (year, julian_day, swin, swout, swnet, tc1, tc2, hmp1, hmp2, rh1, rh2,
+                                 ws1, ws2, wd1, wd2, pres, sh1, sh2, volts, s_winmax, s_woutmax,
                                  s_wnetmax, tc1max, tc2max, tc1min, tc2min, ws1max, ws2max, ws1std, ws2std, tref)
                             )
 
@@ -357,47 +372,56 @@ class ArgosCleaner(Cleaner):
                                                f'ID: {str(station_id)} Reason: time tags in future')
 
                             # If nead_header exists write NEAD file with cleaned data
-                            nead_header = self.get_nead_header(station_num)
+                            # TEST
+                            # nead_header = self.get_nead_header(station_num)
+                            nead_header = self.get_nead_header(station_id)
                             if nead_header is not None:
-                                self.write_nead(wdata, station_num, nead_header)
+                                # TEST
+                                # self.write_nead(wdata, station_num, nead_header)
+                                self.write_nead(wdata, station_id, nead_header)
 
                         # Else station_array is empty after removing bad dates
                         else:
-                            logger.warning(f'\t{self.station_type} Station {station_num} does not have usable data')
+                            # TEST
+                            # logger.warning(f'\t{self.station_type} Station {station_num} does not have usable data')
+                            logger.warning(f'\t{self.station_type} Station {station_id} does not have usable data')
 
                 else:
-                    logger.warning(f'\t{self.station_type} Station {station_num} does not have usable data')
+                    # TEST
+                    # logger.warning(f'\t{self.station_type} Station {station_num} does not have usable data')
+                    logger.warning(f'\t{self.station_type} Station {station_id} does not have usable data')
 
-    # Function writes NEAD file for cleaned station data
+    # Writes NEAD file for cleaned station data
     @staticmethod
-    def write_nead(cleaned_data, station_num, nead_header):
+    def write_nead(cleaned_data, station_id, nead_header):
 
         # TODO pass csv_file_path from config
-        # TODO possible include name of station in output file
-        filename = Path(f'output/{str(station_num)}_NEAD.csv')
+        filename = Path(f'output/{str(station_id)}_NEAD.csv')
 
         with open(filename, 'w') as file:
             if len(cleaned_data) != 0:
-                format_string = '%i,%4i,%.4f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,' \
-                                '%.2f,%.2f,' \
-                                '%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,' \
-                                '%.2f,%.2f,' \
-                                '%.2f,%.2f,%.2f,%.2f,%.2f '
+                # format_string = '%i,%4i,%.4f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,' \
+                #                 '%.2f,%.2f,' \
+                #                 '%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,' \
+                #                 '%.2f,%.2f,' \
+                #                 '%.2f,%.2f,%.2f,%.2f,%.2f '
+                format_string = '%4i,%.4f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,' \
+                                '%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f'
                 try:
                     np.savetxt(file, cleaned_data, fmt=format_string, header=nead_header)
                     logger.info(" Wrote {0} entries for Station {1} to file: {2}"
-                                .format(len(cleaned_data[:, 1]), station_num, filename))
+                                .format(len(cleaned_data[:, 1]), station_id, filename))
                 except Exception as e:
                     logger.error(f' ERROR COULD NOT WRITE CSV, EXCEPTION: {e}')
             # TODO test with no data
             else:
                 np.savetxt(file, cleaned_data)
 
-    # Function returns NEAD header as a string if it exists, else returns None
+    # Returns NEAD header as a string if it exists, else returns None
     @staticmethod
-    def get_nead_header(station_num):
+    def get_nead_header(station_id):
 
-        nead_header_path = Path(f'nead_config/{station_num}.ini')
+        nead_header_path = Path(f'nead_config/{station_id}.ini')
 
         if nead_header_path.is_file():
             with open(nead_header_path, 'r') as file:
@@ -405,13 +429,13 @@ class ArgosCleaner(Cleaner):
             return nead_header
 
         else:
-            logger.error(f' ERROR CAN NOT WRITE NEAD FILE FOR STATION {station_num}: {nead_header_path} does not exist')
+            logger.error(f' ERROR CAN NOT WRITE NEAD FILE FOR STATION {station_id}: {nead_header_path} does not exist')
             return None
 
-    # Function returns station_array which is the array for the data from each station
+    # Returns station_array which is the array for the data from each station
     # created from the combined first and second parts of the input table
     @staticmethod
-    def get_station_array(station_data, station_num):
+    def get_station_array(station_data, station_id):
 
         # Assign constants for column indices in input numpy array
         INPUT_YEAR1_COL = 0
@@ -493,7 +517,7 @@ class ArgosCleaner(Cleaner):
 
             # Combine corresponding parts of table 1 and table 2 into an array within combined_array
             combined_array[j, combined_array_columns] = np.concatenate(
-                (np.array([station_num]),
+                (np.array([station_id]),
                  station_data[table_1_index, table_1_columns],
                  station_data[table_2_index, table_2_columns]))
 
