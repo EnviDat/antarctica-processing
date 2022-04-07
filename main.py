@@ -74,6 +74,7 @@ def get_writer_config_dict(config_parser: configparser):
     return config_dict
 
 
+# Returns list of file paths to local or downloaded input data file(s)
 def get_input_data(config_dict: dict, local_input):
 
     # If command line localInput argument passed (with any string) assign data_file to 'data_local' from config
@@ -120,13 +121,13 @@ def get_input_data(config_dict: dict, local_input):
             with open(f'input_ftp/{download}', "wb") as file:
                 ftp_server.retrbinary(f'RETR {download}', file.write)
 
-        logger.info(f' Downloaded input data from FTP server and wrote {ftp_downloads_number} most recent file(s)')
+        logger.info(f' Downloaded input data from FTP server')
 
         # Append file directory 'input_ftp' to downloaded files, exclude files with name 'log.txt'
         # Assign downloaded file paths to data_files
         data_files = [f'input_ftp/{i}' for i in download_list if not i == 'log.txt']
 
-        return data_files
+    return data_files
 
 
 # TODO clean up temporary downloaded files but not .gitkeep
@@ -140,6 +141,11 @@ def process_argos_data(config_dict: dict, local_input=None):
     for file in data:
         file_dataframe = read_argos(file, nrows=None)
         frames.append(file_dataframe)
+
+    # Remove downloaded FTP files
+    # TODO test with local_input option
+    if local_input is None:
+        remove_downloaded_ftp_files()
 
     # Assign argos_dataframe to concatenated dataframes produced from individual files
     argos_dataframe = pandas.concat(frames)
@@ -165,6 +171,13 @@ def process_argos_data(config_dict: dict, local_input=None):
     return
 
 
+# Removes downloaded FTP files in 'input_ftp' directory except for .gitkeep
+def remove_downloaded_ftp_files():
+    ftp_list = [file for file in os.listdir('input_ftp') if not file.endswith('.gitkeep')]
+    for file in ftp_list:
+        os.remove(os.path.join('input_ftp', file))
+
+
 def main(args=None):
     """
     Main entry point for processing ARGOS satellite transmissions.
@@ -182,7 +195,6 @@ def main(args=None):
         logger.error(f'Not valid config file: {config_path}')
         return -1
 
-    # Process and clean input data, write csv and json files, import csv files data into Postgres database
     repeat = True
     while repeat:
 
@@ -206,7 +218,7 @@ def main(args=None):
         if args.localInput:
             local_input = args.localInput
 
-        # Process ARGOS data
+        # Process and clean ARGOS data, write NEAD files
         process_argos_data(config_dict, local_input)
 
         # TODO output data in NEAD format, one NEAD file per station
