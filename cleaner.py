@@ -3,6 +3,7 @@ from pathlib import Path
 import numpy as np
 import configparser
 from datetime import datetime
+import math
 
 
 import logging
@@ -131,24 +132,16 @@ class ArgosCleaner(Cleaner):
                 # Assign station_id
                 station_id = int(section)
 
-                # Assign station_num
-                # TEST
-                # station_num = int(self.stations_config.get(section, "station_num"))
-
-                # TEST
-                # logger.info(f' Cleaning {self.station_type} Station {station_num}...')
                 logger.info(f' Cleaning {self.station_type} Station {station_id}...')
 
                 if input_data.size != 0:
 
-                    # Assign station_data to data assciated with each station
+                    # Assign station_data to data associated with each station
                     station_data = np.array(input_data[input_data[:, INPUT_STATION_ID_COL] == station_id, :])
 
                     if len(station_data) != 0:
 
                         # Assign station_array to array returns from get_station_array()
-                        # TEST
-                        # station_array = self.get_station_array(station_data, station_num)
                         station_array = self.get_station_array(station_data, station_id)
 
                         # Filter and process station_array
@@ -192,13 +185,13 @@ class ArgosCleaner(Cleaner):
                             # Log how many records removed because of duplicate time stamps
                             if len(unique_date_num_indices) < raw_num:
                                 duplicate_timestamps_num = raw_num - len(unique_date_num_indices)
-                                # TEST
-                                # logger.info(f' Removed {duplicate_timestamps_num} entries out of'
-                                #                f' {raw_num} records from Station {station_num} '
-                                #                f'because of duplicate time tags')
                                 logger.info(f' Removed {duplicate_timestamps_num} entries out of'
                                             f' {raw_num} records from Station {station_id} '
                                             f'because of duplicate time tags')
+
+                            # TEST
+                            julian_dy = station_array[:, STATION_JULIAN_DAY_COL]
+                            hours = station_array[:, STATION_HOUR_COL] / HOURS_IN_DAY
 
                             # Assign unique_timestamp_indices to indices of a sort of unique datetime values along time
                             unique_timestamp_indices = np.argsort(unique_date_num_array)
@@ -208,6 +201,24 @@ class ArgosCleaner(Cleaner):
                             julian_day = julian_day[unique_timestamp_indices]  # crop julian_day vector to unique times
                             year = year[unique_timestamp_indices]
                             date_num = date_num[unique_timestamp_indices]  # leave only unique and sorted date_nums
+
+                            # TEST
+                            julian_dy = julian_dy[unique_timestamp_indices]
+                            hours = hours[unique_timestamp_indices]
+
+                            # Assign timestamp
+                            # print(type(julian_day))
+                            # print(julian_day)
+                            # print(type(year))
+                            # print(year)
+                            # timestamp = self.get_utc_timestamp(year, julian_day)
+                            # timestamp = self.get_utc_timestamp(station_array[:, STATION_YEAR_COL],
+                            #                                    station_array[:, STATION_JULIAN_DAY_COL] \
+                            #                                    + station_array[:, STATION_HOUR_COL] / HOURS_IN_DAY)
+                            # timestamp = year.copy()
+                            # timestamp = self.get_utc_timestamp(year, julian_day)
+                            timestamp = self.get_utc_timestamp(year, julian_dy, hours)
+                            # print(timestamp)
 
                             # Assign station_number
                             # station_number = station_array[:, STATION_NUM_COL]
@@ -352,7 +363,6 @@ class ArgosCleaner(Cleaner):
                             #      ws1, ws2, wd1, wd2, pres, sh1, sh2, snow_temp10, volts, s_winmax, s_woutmax,
                             #      s_wnetmax, tc1max, tc2max, tc1min, tc2min, ws1max, ws2max, ws1std, ws2std, tref)
                             # )
-                            # TEST
                             wdata = np.column_stack(
                                 (year, julian_day, swin, swout, swnet, tc1, tc2, hmp1, hmp2, rh1, rh2,
                                  ws1, ws2, wd1, wd2, pres, sh1, sh2, volts, s_winmax, s_woutmax,
@@ -372,23 +382,15 @@ class ArgosCleaner(Cleaner):
                                                f'ID: {str(station_id)} Reason: time tags in future')
 
                             # If nead_header exists write NEAD file with cleaned data
-                            # TEST
-                            # nead_header = self.get_nead_header(station_num)
                             nead_header = self.get_nead_header(station_id)
                             if nead_header is not None:
-                                # TEST
-                                # self.write_nead(wdata, station_num, nead_header)
                                 self.write_nead(wdata, station_id, nead_header)
 
                         # Else station_array is empty after removing bad dates
                         else:
-                            # TEST
-                            # logger.warning(f'\t{self.station_type} Station {station_num} does not have usable data')
                             logger.warning(f'\t{self.station_type} Station {station_id} does not have usable data')
 
                 else:
-                    # TEST
-                    # logger.warning(f'\t{self.station_type} Station {station_num} does not have usable data')
                     logger.warning(f'\t{self.station_type} Station {station_id} does not have usable data')
 
     # Writes NEAD file for cleaned station data
@@ -431,6 +433,88 @@ class ArgosCleaner(Cleaner):
         else:
             logger.error(f' ERROR CAN NOT WRITE NEAD FILE FOR STATION {station_id}: {nead_header_path} does not exist')
             return None
+
+    # Returns timestamp in ISO UTC format, for example '2020-11-03 00:00:00+00:00'
+    # Returns unix timestamp
+    @staticmethod
+    # def get_utc_timestamp(year, decimal_day):
+    # TODO make timezone configurable
+    def get_utc_timestamp(year, julian_day, hours):
+
+        year = year.astype(int).astype(str)
+        julian_day = julian_day.astype(int).astype(str)
+        hours = (hours * 24).astype(int).astype(str)
+
+        timestamps = np.stack((year, julian_day, hours), axis=1)
+
+        # TODO get index of iteration and alter timestamps!
+
+        index = 0
+        for timestamp in timestamps:
+            timestamp = f'{timestamp[0]}-{timestamp[1]}-{timestamp[2]}'
+            timestamps[index] = timestamp
+            # TODO fix this being duplicated three times
+            index += 1
+
+        # print(timestamps)
+
+
+
+        # timestamp = np.stack((year, decimal_day), axis=1)
+        #
+        # print(timestamp[0][0])
+        #
+        # print(decimal_day)
+        #
+        # day = np.floor(decimal_day)
+        # # print(day)
+        #
+        # fractional_day = decimal_day - day
+        # print(fractional_day)
+        #
+        # fractional_time = fractional_day * 24
+        # print(fractional_time)
+        #
+        # hours = fractional_time.astype(int)
+        # print(hours)
+        #
+        # minutes = ((fractional_time * 60) % 60).astype(int)
+        # print(minutes)
+        #
+        # hours_minutes = np.stack((hours, minutes), axis=1)
+        # print(hours_minutes)
+
+        # day = math.floor(float(decimal_day))
+        # float_decimal_day = float(decimal_day)
+        #
+        # fractional_day = round((float_decimal_day - day), 4)
+        # fractional_time = round((fractional_day * 24), 4)
+        #
+        # hours = int(fractional_time)
+        # minutes = int((fractional_time * 60) % 60)
+        #
+        # # Code for generating seconds
+        # # seconds = str(int(time * 3600) % 60).zfill(2)
+        #
+        # # Round minutes and hours to nearest hour +- 3 minutes
+        # if 57 <= minutes <= 59 and hours != 23:
+        #     minutes = 0
+        #     hours += 1
+        # elif 1 <= minutes <= 3:
+        #     minutes = 0
+        #
+        # # Format variables into padded strings for strptime
+        # padded_day = str(day).zfill(3)
+        # padded_minutes = str(minutes).zfill(2)
+        # padded_hours = str(hours).zfill(2)
+        #
+        # date = "{0}/{1}/{2}:{3}".format(year, padded_day, padded_hours, padded_minutes)
+        # element = datetime.strptime(date, "%Y/%j/%H:%M")
+        # timestamp = int(element.replace(tzinfo=timezone.utc).timestamp())
+        #
+
+        # return timestamp
+
 
     # Returns station_array which is the array for the data from each station
     # created from the combined first and second parts of the input table
