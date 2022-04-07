@@ -129,7 +129,7 @@ def get_input_data(config_dict: dict, local_input):
         return data_files
 
 
-# TODO clean up temporary downloaded files
+# TODO clean up temporary downloaded files but not .gitkeep
 def process_argos_data(config_dict: dict, local_input=None):
 
     # Get input data

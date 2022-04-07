@@ -187,7 +187,7 @@ class ArgosCleaner(Cleaner):
                             # Log how many records removed because of duplicate time stamps
                             if len(unique_date_num_indices) < raw_num:
                                 duplicate_timestamps_num = raw_num - len(unique_date_num_indices)
-                                logger.warning(f' Removed {duplicate_timestamps_num} entries out of'
+                                logger.info(f' Removed {duplicate_timestamps_num} entries out of'
                                                f' {raw_num} records from Station {station_num} '
                                                f'because of duplicate time tags')
 
@@ -356,8 +356,10 @@ class ArgosCleaner(Cleaner):
                                                f'of {str(len(wdata[:, 1]) + future_reports_num)} records from station '
                                                f'ID: {str(station_id)} Reason: time tags in future')
 
-                            # Call write_nead function to write NEAD file with cleaned data
-                            self.write_nead(wdata, station_num)
+                            # If nead_header exists write NEAD file with cleaned data
+                            nead_header = self.get_nead_header(station_num)
+                            if nead_header is not None:
+                                self.write_nead(wdata, station_num, nead_header)
 
                         # Else station_array is empty after removing bad dates
                         else:
@@ -368,12 +370,11 @@ class ArgosCleaner(Cleaner):
 
     # Function writes NEAD file for cleaned station data
     @staticmethod
-    def write_nead(cleaned_data, station_num):
+    def write_nead(cleaned_data, station_num, nead_header):
 
         # TODO pass csv_file_path from config
-        filename = Path(f'output/{str(station_num)}.csv')
-
-        # TODO get NEAD header
+        # TODO possible include name of station in output file
+        filename = Path(f'output/{str(station_num)}_NEAD.csv')
 
         with open(filename, 'w') as file:
             if len(cleaned_data) != 0:
@@ -383,15 +384,29 @@ class ArgosCleaner(Cleaner):
                                 '%.2f,%.2f,' \
                                 '%.2f,%.2f,%.2f,%.2f,%.2f '
                 try:
-                    # TODO get NEAD header
-                    np.savetxt(file, cleaned_data, fmt=format_string)
-                    logger.info(" Successfully saved {0} entries to file: {1}"
-                                .format(len(cleaned_data[:, 1]), filename))
+                    np.savetxt(file, cleaned_data, fmt=format_string, header=nead_header)
+                    logger.info(" Wrote {0} entries for Station {1} to file: {2}"
+                                .format(len(cleaned_data[:, 1]), station_num, filename))
                 except Exception as e:
-                    logger.error(f' Could not write CSV, {e}')
+                    logger.error(f' ERROR COULD NOT WRITE CSV, EXCEPTION: {e}')
             # TODO test with no data
             else:
                 np.savetxt(file, cleaned_data)
+
+    # Function returns NEAD header as a string if it exists, else returns None
+    @staticmethod
+    def get_nead_header(station_num):
+
+        nead_header_path = Path(f'nead_config/{station_num}.ini')
+
+        if nead_header_path.is_file():
+            with open(nead_header_path, 'r') as file:
+                nead_header = file.read()
+            return nead_header
+
+        else:
+            logger.error(f' ERROR CAN NOT WRITE NEAD FILE FOR STATION {station_num}: {nead_header_path} does not exist')
+            return None
 
     # Function returns station_array which is the array for the data from each station
     # created from the combined first and second parts of the input table
