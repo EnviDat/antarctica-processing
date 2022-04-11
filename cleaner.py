@@ -357,14 +357,6 @@ class ArgosCleaner(Cleaner):
                             ws2std = station_array[:, STATION_WS2STD_COL]
                             tref = station_array[:, STATION_TREF_COL]
 
-                            # Note this code does not currently calculate the 2 and 10 m winds and albedo,
-                            # so these are columns 1-42 of the Level C data
-                            # Assemble data into final level C standard form
-                            # data_filtered = np.column_stack(
-                            #     (year, julian_day, swin, swout, swnet, tc1, tc2, hmp1, hmp2, rh1, rh2,
-                            #      ws1, ws2, wd1, wd2, pres, sh1, sh2, snow_temp10, volts, s_winmax, s_woutmax,
-                            #      s_wnetmax, tc1max, tc2max, tc1min, tc2min, ws1max, ws2max, ws1std, ws2std, tref)
-                            # )
                             # Assemble filtered data into data_filtered 2d array
                             data_filtered = np.column_stack(
                                 (swin, swout, swnet, tc1, tc2, hmp1, hmp2, rh1, rh2,
@@ -389,7 +381,7 @@ class ArgosCleaner(Cleaner):
 
                             # Combine timestamp_iso and data_filtered arrays into timestamped_data
                             # NOTE: Because timestamp_iso has string values
-                            # all timestamp_data values are converted to string
+                            # all timestamp_data values are converted to strings
                             timestamped_data = np.column_stack((timestamp_iso, data_filtered))
 
                             # If nead_header exists write NEAD file with cleaned data
