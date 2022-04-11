@@ -217,8 +217,8 @@ class ArgosCleaner(Cleaner):
                             #                                    + station_array[:, STATION_HOUR_COL] / HOURS_IN_DAY)
                             # timestamp = year.copy()
                             # timestamp = self.get_utc_timestamp(year, julian_day)
-                            timestamp = self.get_utc_timestamp(year, julian_dy, hours)
-                            # print(timestamp)
+                            # timestamp_iso = self.get_timestamp_iso(year, julian_dy, hours)
+                            # print(timestamp_iso)
 
                             # Assign station_number
                             # station_number = station_array[:, STATION_NUM_COL]
@@ -227,6 +227,8 @@ class ArgosCleaner(Cleaner):
                             swin = self._filter_values_calibrate(station_array[:, STATION_SWIN_COL], section,
                                                                  "swmin", "swmax", "swin",
                                                                  self.no_data, self.no_data)
+
+                            # print(swin)
 
                             # Assign and calibrate outgoing shortwave
                             swout = self._filter_values_calibrate(station_array[:, STATION_SWOUT_COL], section,
@@ -358,13 +360,14 @@ class ArgosCleaner(Cleaner):
                             # Note this code does not currently calculate the 2 and 10 m winds and albedo,
                             # so these are columns 1-42 of the Level C data
                             # Assemble data into final level C standard form
-                            # wdata = np.column_stack(
-                            #     (station_number, year, julian_day, swin, swout, swnet, tc1, tc2, hmp1, hmp2, rh1, rh2,
+                            # data_filtered = np.column_stack(
+                            #     (year, julian_day, swin, swout, swnet, tc1, tc2, hmp1, hmp2, rh1, rh2,
                             #      ws1, ws2, wd1, wd2, pres, sh1, sh2, snow_temp10, volts, s_winmax, s_woutmax,
                             #      s_wnetmax, tc1max, tc2max, tc1min, tc2min, ws1max, ws2max, ws1std, ws2std, tref)
                             # )
-                            wdata = np.column_stack(
-                                (year, julian_day, swin, swout, swnet, tc1, tc2, hmp1, hmp2, rh1, rh2,
+                            # Assemble filtered data into data_filtered 2d array
+                            data_filtered = np.column_stack(
+                                (swin, swout, swnet, tc1, tc2, hmp1, hmp2, rh1, rh2,
                                  ws1, ws2, wd1, wd2, pres, sh1, sh2, volts, s_winmax, s_woutmax,
                                  s_wnetmax, tc1max, tc2max, tc1min, tc2min, ws1max, ws2max, ws1std, ws2std, tref)
                             )
@@ -373,18 +376,26 @@ class ArgosCleaner(Cleaner):
                             current_date_num = self._get_date_num()
 
                             # Only take entries in the past
-                            wdata = wdata[date_num < current_date_num, :]
+                            data_filtered = data_filtered[date_num < current_date_num, :]
                             future_reports_num = len(np.argwhere(date_num > current_date_num))
 
                             if future_reports_num > 0:
                                 logger.warning(f' Removed {str(future_reports_num)} entries out '
-                                               f'of {str(len(wdata[:, 1]) + future_reports_num)} records from station '
+                                               f'of {str(len(data_filtered[:, 1]) + future_reports_num)} records from station '
                                                f'ID: {str(station_id)} Reason: time tags in future')
+
+                            # Create 1d array of timestamp_iso from existing year, julian day, and hours data
+                            timestamp_iso = self.get_timestamp_iso(year, julian_dy, hours)
+
+                            # Combine timestamp_iso and data_filtered arrays into timestamped_data
+                            # NOTE: Because timestamp_iso has string values
+                            # all timestamp_data values are converted to string
+                            timestamped_data = np.column_stack((timestamp_iso, data_filtered))
 
                             # If nead_header exists write NEAD file with cleaned data
                             nead_header = self.get_nead_header(station_id)
                             if nead_header is not None:
-                                self.write_nead(wdata, station_id, nead_header)
+                                self.write_nead(timestamped_data, station_id, nead_header)
 
                         # Else station_array is empty after removing bad dates
                         else:
@@ -402,13 +413,9 @@ class ArgosCleaner(Cleaner):
 
         with open(filename, 'w') as file:
             if len(cleaned_data) != 0:
-                # format_string = '%i,%4i,%.4f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,' \
-                #                 '%.2f,%.2f,' \
-                #                 '%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,' \
-                #                 '%.2f,%.2f,' \
-                #                 '%.2f,%.2f,%.2f,%.2f,%.2f '
-                format_string = '%4i,%.4f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,' \
-                                '%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f'
+                # Create format_string from number of columns of cleaned_data
+                cleaned_data_columns_num = cleaned_data.shape[1]
+                format_string = '%s,'*cleaned_data_columns_num
                 try:
                     np.savetxt(file, cleaned_data, fmt=format_string, header=nead_header)
                     logger.info(" Wrote {0} entries for Station {1} to file: {2}"
@@ -437,28 +444,45 @@ class ArgosCleaner(Cleaner):
     # Returns timestamp in ISO UTC format, for example '2020-11-03 00:00:00+00:00'
     # Returns unix timestamp
     @staticmethod
-    # def get_utc_timestamp(year, decimal_day):
     # TODO make timezone configurable
-    def get_utc_timestamp(year, julian_day, hours):
+    def get_timestamp_iso(year, julian_day, hours):
 
         year = year.astype(int).astype(str)
         julian_day = julian_day.astype(int).astype(str)
         hours = (hours * 24).astype(int).astype(str)
 
         timestamps = np.stack((year, julian_day, hours), axis=1)
+        # timestamps = np.stack(f'{year}-{julian_day}-{hours}')
+        # print(timestamps)
 
         # TODO get index of iteration and alter timestamps!
 
-        index = 0
-        for timestamp in timestamps:
-            timestamp = f'{timestamp[0]}-{timestamp[1]}-{timestamp[2]}'
-            timestamps[index] = timestamp
-            # TODO fix this being duplicated three times
-            index += 1
-
+        # index = 0
+        # for timestamp in timestamps:
+        #     timestamp = f'{timestamp[0]}-{timestamp[1]}-{timestamp[2]}'
+        #     print(timestamp)
+        #     timestamps[index] = timestamp
+        #     print(timestamps[index])
+        #     # TODO fix this being duplicated three times
+        #     index += 1
+        #
         # print(timestamps)
 
+        timestamps_formatted = []
+        for index in range(len(timestamps)):
+            timestamp = f'{timestamps[index][0]}-{timestamps[index][1]}-{timestamps[index][2]}'
+            timestamps_formatted.append(timestamp)
+            # print(timestamp)
+            # timestamps[index] = timestamp
+            # print(timestamps[index])
+            # TODO fix this being duplicated three times
 
+        timestamps_iso = np.array(timestamps_formatted)
+
+        return timestamps_iso
+
+
+        # print(timestamps)
 
         # timestamp = np.stack((year, decimal_day), axis=1)
         #
