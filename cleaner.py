@@ -189,7 +189,7 @@ class ArgosCleaner(Cleaner):
                                             f' {raw_num} records from Station {station_id} '
                                             f'because of duplicate time tags')
 
-                            # TEST
+                            # Assign variables used to create timestamp_iso
                             julian_dy = station_array[:, STATION_JULIAN_DAY_COL]
                             hours = station_array[:, STATION_HOUR_COL] / HOURS_IN_DAY
 
@@ -205,20 +205,6 @@ class ArgosCleaner(Cleaner):
                             # TEST
                             julian_dy = julian_dy[unique_timestamp_indices]
                             hours = hours[unique_timestamp_indices]
-
-                            # Assign timestamp
-                            # print(type(julian_day))
-                            # print(julian_day)
-                            # print(type(year))
-                            # print(year)
-                            # timestamp = self.get_utc_timestamp(year, julian_day)
-                            # timestamp = self.get_utc_timestamp(station_array[:, STATION_YEAR_COL],
-                            #                                    station_array[:, STATION_JULIAN_DAY_COL] \
-                            #                                    + station_array[:, STATION_HOUR_COL] / HOURS_IN_DAY)
-                            # timestamp = year.copy()
-                            # timestamp = self.get_utc_timestamp(year, julian_day)
-                            # timestamp_iso = self.get_timestamp_iso(year, julian_dy, hours)
-                            # print(timestamp_iso)
 
                             # Assign station_number
                             # station_number = station_array[:, STATION_NUM_COL]
@@ -373,15 +359,13 @@ class ArgosCleaner(Cleaner):
 
                             if future_reports_num > 0:
                                 logger.warning(f' Removed {str(future_reports_num)} entries out '
-                                               f'of {str(len(data_filtered[:, 1]) + future_reports_num)} records from station '
-                                               f'ID: {str(station_id)} Reason: time tags in future')
+                                               f'of {str(len(data_filtered[:, 1]) + future_reports_num)} records from '
+                                               f'station ID: {str(station_id)} Reason: time tags in future')
 
-                            # Create 1d array of timestamp_iso from existing year, julian day, and hours data
+                            # Create 1d array of timestamp_iso datetime objects from existing time data
                             timestamp_iso = self.get_timestamp_iso(year, julian_dy, hours)
 
                             # Combine timestamp_iso and data_filtered arrays into timestamped_data
-                            # NOTE: Because timestamp_iso has string values
-                            # all timestamp_data values are converted to strings
                             timestamped_data = np.column_stack((timestamp_iso, data_filtered))
 
                             # If nead_header exists write NEAD file with cleaned data
@@ -437,99 +421,32 @@ class ArgosCleaner(Cleaner):
     # Returns unix timestamp
     @staticmethod
     # TODO make timezone configurable
-    def get_timestamp_iso(year, julian_day, hours):
+    def get_timestamp_iso(year, julian_day, hours, timezone='+0000'):
 
         year = year.astype(int).astype(str)
         julian_day = julian_day.astype(int).astype(str)
         hours = (hours * 24).astype(int).astype(str)
 
+        # Combine year, julian_day, hours into timestamps
         timestamps = np.stack((year, julian_day, hours), axis=1)
-        # timestamps = np.stack(f'{year}-{julian_day}-{hours}')
-        # print(timestamps)
 
-        # TODO get index of iteration and alter timestamps!
-
-        # index = 0
-        # for timestamp in timestamps:
-        #     timestamp = f'{timestamp[0]}-{timestamp[1]}-{timestamp[2]}'
-        #     print(timestamp)
-        #     timestamps[index] = timestamp
-        #     print(timestamps[index])
-        #     # TODO fix this being duplicated three times
-        #     index += 1
-        #
-        # print(timestamps)
-
+        # Assign timestamps_formatted to list of timestamps in ISO format
         timestamps_formatted = []
         for index in range(len(timestamps)):
-            timestamp = f'{timestamps[index][0]}-{timestamps[index][1]}-{timestamps[index][2]}'
-            timestamps_formatted.append(timestamp)
-            # print(timestamp)
-            # timestamps[index] = timestamp
-            # print(timestamps[index])
-            # TODO fix this being duplicated three times
 
+            timestamp = f'{timestamps[index][0]}-' \
+                        f'{(timestamps[index][1]).zfill(3)}-' \
+                        f'{(timestamps[index][2]).zfill(2)} ' \
+                        f'{timezone}'
+
+            # Convert timestamp string to datetime object and append to timestamps_formatted
+            dt_object = datetime.strptime(timestamp, '%Y-%j-%H %z')
+            timestamps_formatted.append(dt_object)
+
+        # Convert timestamps_formattted into Numpy 1d array timestamps_iso
         timestamps_iso = np.array(timestamps_formatted)
 
         return timestamps_iso
-
-
-        # print(timestamps)
-
-        # timestamp = np.stack((year, decimal_day), axis=1)
-        #
-        # print(timestamp[0][0])
-        #
-        # print(decimal_day)
-        #
-        # day = np.floor(decimal_day)
-        # # print(day)
-        #
-        # fractional_day = decimal_day - day
-        # print(fractional_day)
-        #
-        # fractional_time = fractional_day * 24
-        # print(fractional_time)
-        #
-        # hours = fractional_time.astype(int)
-        # print(hours)
-        #
-        # minutes = ((fractional_time * 60) % 60).astype(int)
-        # print(minutes)
-        #
-        # hours_minutes = np.stack((hours, minutes), axis=1)
-        # print(hours_minutes)
-
-        # day = math.floor(float(decimal_day))
-        # float_decimal_day = float(decimal_day)
-        #
-        # fractional_day = round((float_decimal_day - day), 4)
-        # fractional_time = round((fractional_day * 24), 4)
-        #
-        # hours = int(fractional_time)
-        # minutes = int((fractional_time * 60) % 60)
-        #
-        # # Code for generating seconds
-        # # seconds = str(int(time * 3600) % 60).zfill(2)
-        #
-        # # Round minutes and hours to nearest hour +- 3 minutes
-        # if 57 <= minutes <= 59 and hours != 23:
-        #     minutes = 0
-        #     hours += 1
-        # elif 1 <= minutes <= 3:
-        #     minutes = 0
-        #
-        # # Format variables into padded strings for strptime
-        # padded_day = str(day).zfill(3)
-        # padded_minutes = str(minutes).zfill(2)
-        # padded_hours = str(hours).zfill(2)
-        #
-        # date = "{0}/{1}/{2}:{3}".format(year, padded_day, padded_hours, padded_minutes)
-        # element = datetime.strptime(date, "%Y/%j/%H:%M")
-        # timestamp = int(element.replace(tzinfo=timezone.utc).timestamp())
-        #
-
-        # return timestamp
 
 
     # Returns station_array which is the array for the data from each station
