@@ -68,20 +68,12 @@ def read_config(config_path: str):
     return config
 
 
-def get_writer_config_dict(config_parser: configparser):
-    config_dict = dict(config_parser.items('file'))
-    config_dict['columns'] = dict(config_parser.items('columns'))
-    return config_dict
-
-
 # Returns list of file paths to local or downloaded input data file(s)
-# def get_input_data(config_dict: dict, local_input):
 def get_input_data(config, local_input):
 
     # If command line localInput argument passed (with any string) assign data_file to 'data_local' from config
     if local_input:
         # TODO test this option
-        # data_files = [config_dict['data_local']]
         data_files = config.get('DEFAULT', 'data_local')
         logger.info(f' Skipping downloading input data, using local file(s): {data_files}')
 
@@ -111,7 +103,6 @@ def get_input_data(config, local_input):
 
         # TODO add validator that makes sure 'ftp_downloads_number' can be converted to integer
         # Assign list of 'ftp_downloads_number' (from config) recently modified files on FTP server
-        # ftp_downloads_number = int(config_dict['ftp_downloads_number'])
         ftp_downloads_number = int(config.get('DEFAULT', 'ftp_downloads_number'))
         ftp_list = ftp_list_sorted_desc[:ftp_downloads_number]
 
@@ -134,11 +125,16 @@ def get_input_data(config, local_input):
     return data_files
 
 
-# def process_argos_data(config_dict: dict, local_input=None):
+# Removes downloaded FTP files in 'input_ftp' directory except for .gitkeep
+def remove_downloaded_ftp_files():
+    ftp_list = [file for file in os.listdir('input_ftp') if not file.endswith('.gitkeep')]
+    for file in ftp_list:
+        os.remove(os.path.join('input_ftp', file))
+
+
 def process_argos_data(config, local_input=None):
 
     # Get input data
-    # data = get_input_data(config_dict, local_input)
     data = get_input_data(config, local_input)
 
     # Assign frames to list of pandas dataframes produced for each file in data by calling read_argos()
@@ -176,13 +172,6 @@ def process_argos_data(config, local_input=None):
     return
 
 
-# Removes downloaded FTP files in 'input_ftp' directory except for .gitkeep
-def remove_downloaded_ftp_files():
-    ftp_list = [file for file in os.listdir('input_ftp') if not file.endswith('.gitkeep')]
-    for file in ftp_list:
-        os.remove(os.path.join('input_ftp', file))
-
-
 def main(args=None):
     """
     Main entry point for processing ARGOS satellite transmissions.
@@ -213,18 +202,12 @@ def main(args=None):
                     .format(datetime.fromtimestamp(start_time)
                             .strftime('%Y-%m-%d %H:%M:%S')))
 
-        # Get config_dict configured for 'argos'
-        # config_dict = dict(config.items('argos'))
-        # # TODO see if line below still needed, update config file
-        # config_dict['writer'] = get_writer_config_dict(config)
-
         local_input = None
         # If commandline option localInput is passed assign local_input
         if args.localInput:
             local_input = args.localInput
 
         # Process and clean ARGOS data, write NEAD files
-        # process_argos_data(config_dict, local_input)
         process_argos_data(config, local_input)
 
         # Finish data processing interation
