@@ -16,13 +16,13 @@
 # Then call main and pass arguments as needed.
 #
 # No arguments:
-#   main.main()
+#   main()
 #
 # repeatInterval:
-#   main.main(['-r 10'])
+#   main(['-r 10'])
 #
 # repeatInterval and localInput:
-#   main.main(['-r 10', '-l True'])
+#   main(['-r 10', '-l True'])
 #
 
 
