@@ -130,7 +130,6 @@ def get_input_data(config_dict: dict, local_input):
     return data_files
 
 
-# TODO clean up temporary downloaded files but not .gitkeep
 def process_argos_data(config_dict: dict, local_input=None):
 
     # Get input data
@@ -221,18 +220,11 @@ def main(args=None):
         # Process and clean ARGOS data, write NEAD files
         process_argos_data(config_dict, local_input)
 
-        # TODO output data in NEAD format, one NEAD file per station
-
-        # # Write short-term csv files
-        # station_array = list((config.get("file", "stations")).split(","))
-        # csv_short_days = int(config.get("file", "short_term_days"))
-        # csv_writer_config = get_writer_config_dict(config)
-        # csv_writer = Writer.new_from_dict(csv_writer_config)
-        # csv_writer.write_csv_short_term(station_array, csv_short_days)
-
+        # Finish data processing interation
         exec_time = int(time.time() - start_time)
         logger.info(f' FINISHED data processing iteration, that took {exec_time} seconds')
 
+        # If repeat argument passed then set sleep interval
         if repeat:
             interval = int(args.repeatInterval) * 60
             if interval > exec_time:
