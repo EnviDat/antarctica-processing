@@ -6,6 +6,7 @@ in Antarctica. Station data are transmitted via the ARGOS
 satellite system.
 
 After processing data are outputted in NEAD format. One NEAD file is created for every station.
+NEAD files are .csv files with an informative metadata header.
 For more information about the NEAD format please see https://www.doi.org/10.16904/envidat.187
 
 
