@@ -357,10 +357,11 @@ class ArgosCleaner(Cleaner):
 
                             # If nead_header exists write NEAD file with cleaned data
                             nead_header, nodata = self.get_nead_header(station_id)
+                            output_dir = self.stations_config.get('DEFAULT', 'output_dir')
                             if nead_header is not None:
                                 # Assign self.no_data values to nodata value from NEAD header
                                 timestamped_data[timestamped_data == self.no_data] = nodata
-                                self.write_nead(timestamped_data, station_id, nead_header)
+                                self.write_nead(timestamped_data, output_dir, station_id, nead_header)
 
                         # Else station_array is empty after removing bad dates
                         else:
@@ -371,10 +372,9 @@ class ArgosCleaner(Cleaner):
 
     # Writes NEAD file for cleaned station data
     @staticmethod
-    def write_nead(cleaned_data, station_id, nead_header):
+    def write_nead(cleaned_data, output_dir, station_id, nead_header):
 
-        # TODO pass csv_file_path from config
-        filename = Path(f'output/{str(station_id)}_NEAD.csv')
+        filename = Path(f'{output_dir}/{str(station_id)}_NEAD.csv')
 
         with open(filename, 'w') as file:
             if len(cleaned_data) != 0:
@@ -402,7 +402,7 @@ class ArgosCleaner(Cleaner):
                 nead_header = file.read()
                 nead_header_config = configparser.ConfigParser()
                 nead_header_config.read(nead_header_path)
-                nodata = nead_header_config['METADATA']['nodata']
+                nodata = nead_header_config.get('METADATA', 'nodata')
             return nead_header, nodata
 
         else:
