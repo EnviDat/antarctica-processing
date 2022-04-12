@@ -188,7 +188,7 @@ class ArgosCleaner(Cleaner):
                                 duplicate_timestamps_num = raw_num - len(unique_date_num_indices)
                                 logger.info(f' Removed {duplicate_timestamps_num} entries out of'
                                             f' {raw_num} records from Station {station_id} '
-                                            f'because of duplicate time tags')
+                                            f'because of duplicate timestamps')
 
                             # Assign variables used to create timestamp_iso
                             julian_dy = station_array[:, STATION_JULIAN_DAY_COL]
@@ -344,9 +344,20 @@ class ArgosCleaner(Cleaner):
 
                             # Assemble filtered data into data_filtered 2d array
                             data_filtered = np.column_stack(
-                                (swin, swout, swnet, tc1, tc2, hmp1, hmp2, rh1, rh2,
-                                 ws1, ws2, wd1, wd2, pres, sh1, sh2, volts, s_winmax, s_woutmax,
-                                 s_wnetmax, tc1max, tc2max, tc1min, tc2min, ws1max, ws2max, ws1std, ws2std, tref)
+                                (swin, s_winmax,
+                                 swout, s_woutmax,
+                                 swnet, s_wnetmax,
+                                 tc1, tc1max, tc1min,
+                                 tc2, tc2max, tc2min,
+                                 hmp1, hmp2,
+                                 rh1, rh2,
+                                 ws1, ws1max, ws1std,
+                                 ws2, ws2max, ws2std,
+                                 wd1, wd2,
+                                 pres,
+                                 sh1, sh2,
+                                 volts,
+                                 tref)
                             )
 
                             # Create 1d array of timestamp_iso datetime objects from existing time data
@@ -374,7 +385,10 @@ class ArgosCleaner(Cleaner):
     @staticmethod
     def write_nead(cleaned_data, output_dir, station_id, nead_header):
 
-        filename = Path(f'{output_dir}/{str(station_id)}_NEAD.csv')
+        current_datetime = datetime.now()
+        current_datetime_string = current_datetime.strftime("%Y-%m-%d_%H%M")
+
+        filename = Path(f'{output_dir}/{str(station_id)}_NEAD_{current_datetime_string}.csv')
 
         with open(filename, 'w') as file:
             if len(cleaned_data) != 0:
