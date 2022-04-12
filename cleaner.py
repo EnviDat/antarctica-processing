@@ -18,7 +18,8 @@ class Cleaner(object):
     def __init__(self, init_file_path: str, station_type: str):
         self.init_file_path = init_file_path
         self.stations_config = self._get_config()
-        self.no_data = float(self.stations_config.get("DEFAULT", "no_data"))
+        # self.no_data = float(self.stations_config.get("DEFAULT", "no_data"))
+        self.no_data = 999
         self.station_type = station_type
 
     def _get_config(self):
@@ -355,10 +356,10 @@ class ArgosCleaner(Cleaner):
                             timestamped_data = np.column_stack((timestamp_iso, data_filtered))
 
                             # If nead_header exists write NEAD file with cleaned data
-                            nead_header = self.get_nead_header(station_id)
+                            nead_header, nodata = self.get_nead_header(station_id)
                             if nead_header is not None:
-                                # nead_header_config = configparser.ConfigParser()
-                                # nead_header_config.read(Path(f'output/{str(station_id)}_NEAD.csv')
+                                # Assign self.no_data values to nodata value from NEAD header
+                                timestamped_data[timestamped_data == self.no_data] = nodata
                                 self.write_nead(timestamped_data, station_id, nead_header)
 
                         # Else station_array is empty after removing bad dates
@@ -390,7 +391,7 @@ class ArgosCleaner(Cleaner):
             else:
                 np.savetxt(file, cleaned_data)
 
-    # Returns NEAD header as a string if it exists, else returns None
+    # Returns NEAD header as a string if it exists and nodata value from NEAD heaer, else returns None, None
     @staticmethod
     def get_nead_header(station_id):
 
@@ -399,11 +400,14 @@ class ArgosCleaner(Cleaner):
         if nead_header_path.is_file():
             with open(nead_header_path, 'r') as file:
                 nead_header = file.read()
-            return nead_header
+                nead_header_config = configparser.ConfigParser()
+                nead_header_config.read(nead_header_path)
+                nodata = nead_header_config['METADATA']['nodata']
+            return nead_header, nodata
 
         else:
             logger.error(f' ERROR CAN NOT WRITE NEAD FILE FOR STATION {station_id}: {nead_header_path} does not exist')
-            return None
+            return None, None
 
     # Returns timestamp in ISO UTC format, for example '2020-11-03 00:00:00+00:00'
     # Returns unix timestamp
@@ -435,7 +439,6 @@ class ArgosCleaner(Cleaner):
         timestamps_iso = np.array(timestamps_formatted)
 
         return timestamps_iso
-
 
     # Returns station_array which is the array for the data from each station
     # created from the combined first and second parts of the input table
