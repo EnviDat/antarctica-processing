@@ -1,13 +1,13 @@
 # TODO work in progress, needs further development
+# TODO test that NEAD outputs are correct
 #
 # Purpose: Read, decode, and clean ARGOS satellite raw data for automated weather stations in Antarctica.
 # Output: Writes NEAD files with the decoded data.
-# TODO add more information about the NEAD format
+# For more information about the NEAD format please see https://www.doi.org/10.16904/envidat.187
 #
 # Contributing Authors : Rebecca Buchholz, V.Trotsiuk and Lucia de Espona, Swiss Federal Research Institute WSL
-# Date Last Modified: April 1, 2022
+# Date Last Modified: April 12, 2022
 #
-# TODO clarify example commands
 #
 # Example commands to run main() (make sure virtual environment is activated):
 #   python
@@ -75,16 +75,19 @@ def get_writer_config_dict(config_parser: configparser):
 
 
 # Returns list of file paths to local or downloaded input data file(s)
-def get_input_data(config_dict: dict, local_input):
+# def get_input_data(config_dict: dict, local_input):
+def get_input_data(config, local_input):
 
     # If command line localInput argument passed (with any string) assign data_file to 'data_local' from config
     if local_input:
         # TODO test this option
-        data_files = [config_dict['data_local']]
+        # data_files = [config_dict['data_local']]
+        data_files = config.get('DEFAULT', 'data_local')
         logger.info(f' Skipping downloading input data, using local file(s): {data_files}')
 
     # Else retreive data from FTP server
     else:
+
         # Load and assign FTP server credentials from .env file
         load_dotenv('.env')
         ftp_host = os.getenv('FTP_HOST')
@@ -108,7 +111,8 @@ def get_input_data(config_dict: dict, local_input):
 
         # TODO add validator that makes sure 'ftp_downloads_number' can be converted to integer
         # Assign list of 'ftp_downloads_number' (from config) recently modified files on FTP server
-        ftp_downloads_number = int(config_dict['ftp_downloads_number'])
+        # ftp_downloads_number = int(config_dict['ftp_downloads_number'])
+        ftp_downloads_number = int(config.get('DEFAULT', 'ftp_downloads_number'))
         ftp_list = ftp_list_sorted_desc[:ftp_downloads_number]
 
         # Assign list of file names to download
@@ -130,10 +134,12 @@ def get_input_data(config_dict: dict, local_input):
     return data_files
 
 
-def process_argos_data(config_dict: dict, local_input=None):
+# def process_argos_data(config_dict: dict, local_input=None):
+def process_argos_data(config, local_input=None):
 
     # Get input data
-    data = get_input_data(config_dict, local_input)
+    # data = get_input_data(config_dict, local_input)
+    data = get_input_data(config, local_input)
 
     # Assign frames to list of pandas dataframes produced for each file in data by calling read_argos()
     frames = []
@@ -187,7 +193,7 @@ def main(args=None):
     args = parser.parse_args(args)
 
     # Read config file
-    config_path = 'config/config.ini'
+    config_path = 'config/stations.ini'
     config = read_config(config_path)
 
     if not config:
@@ -208,9 +214,9 @@ def main(args=None):
                             .strftime('%Y-%m-%d %H:%M:%S')))
 
         # Get config_dict configured for 'argos'
-        config_dict = dict(config.items('argos'))
-        # TODO see if line below still needed, update config file
-        config_dict['writer'] = get_writer_config_dict(config)
+        # config_dict = dict(config.items('argos'))
+        # # TODO see if line below still needed, update config file
+        # config_dict['writer'] = get_writer_config_dict(config)
 
         local_input = None
         # If commandline option localInput is passed assign local_input
@@ -218,7 +224,8 @@ def main(args=None):
             local_input = args.localInput
 
         # Process and clean ARGOS data, write NEAD files
-        process_argos_data(config_dict, local_input)
+        # process_argos_data(config_dict, local_input)
+        process_argos_data(config, local_input)
 
         # Finish data processing interation
         exec_time = int(time.time() - start_time)

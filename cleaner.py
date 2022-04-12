@@ -18,6 +18,7 @@ class Cleaner(object):
     def __init__(self, init_file_path: str, station_type: str):
         self.init_file_path = init_file_path
         self.stations_config = self._get_config()
+        # TODO investigate eliminating no_data value in stations.ini and using a variable instead in cleaner.py
         # self.no_data = float(self.stations_config.get("DEFAULT", "no_data"))
         self.no_data = 999
         self.station_type = station_type
