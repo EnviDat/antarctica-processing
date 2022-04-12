@@ -202,7 +202,7 @@ class ArgosCleaner(Cleaner):
                             year = year[unique_timestamp_indices]
                             date_num = date_num[unique_timestamp_indices]  # leave only unique and sorted date_nums
 
-                            # TEST
+                            # Assign variables used for timestamp_iso creation
                             julian_dy = julian_dy[unique_timestamp_indices]
                             hours = hours[unique_timestamp_indices]
 
@@ -213,8 +213,6 @@ class ArgosCleaner(Cleaner):
                             swin = self._filter_values_calibrate(station_array[:, STATION_SWIN_COL], section,
                                                                  "swmin", "swmax", "swin",
                                                                  self.no_data, self.no_data)
-
-                            # print(swin)
 
                             # Assign and calibrate outgoing shortwave
                             swout = self._filter_values_calibrate(station_array[:, STATION_SWOUT_COL], section,
@@ -350,27 +348,17 @@ class ArgosCleaner(Cleaner):
                                  s_wnetmax, tc1max, tc2max, tc1min, tc2min, ws1max, ws2max, ws1std, ws2std, tref)
                             )
 
-                            # Get current date number
-                            current_date_num = self._get_date_num()
-
-                            # Only take entries in the past
-                            data_filtered = data_filtered[date_num < current_date_num, :]
-                            future_reports_num = len(np.argwhere(date_num > current_date_num))
-
-                            if future_reports_num > 0:
-                                logger.warning(f' Removed {str(future_reports_num)} entries out '
-                                               f'of {str(len(data_filtered[:, 1]) + future_reports_num)} records from '
-                                               f'station ID: {str(station_id)} Reason: time tags in future')
-
                             # Create 1d array of timestamp_iso datetime objects from existing time data
                             timestamp_iso = self.get_timestamp_iso(year, julian_dy, hours)
 
-                            # Combine timestamp_iso and data_filtered arrays into timestamped_data
+                            # Combine timestamp_iso and data_filtered arrays into timestamped_data 2d array
                             timestamped_data = np.column_stack((timestamp_iso, data_filtered))
 
                             # If nead_header exists write NEAD file with cleaned data
                             nead_header = self.get_nead_header(station_id)
                             if nead_header is not None:
+                                # nead_header_config = configparser.ConfigParser()
+                                # nead_header_config.read(Path(f'output/{str(station_id)}_NEAD.csv')
                                 self.write_nead(timestamped_data, station_id, nead_header)
 
                         # Else station_array is empty after removing bad dates
