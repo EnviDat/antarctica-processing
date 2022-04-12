@@ -5,7 +5,7 @@
 # Output: Writes NEAD files with the decoded data.
 # For more information about the NEAD format please see https://www.doi.org/10.16904/envidat.187
 #
-# Contributing Authors : Rebecca Buchholz, V.Trotsiuk and Lucia de Espona, Swiss Federal Research Institute WSL
+# Contributing Authors : Rebecca Buchholz and V.Trotsiuk, Swiss Federal Research Institute WSL
 # Date Last Modified: April 12, 2022
 #
 #

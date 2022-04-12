@@ -9,6 +9,9 @@ After processing data are outputted in NEAD format. One NEAD file is created for
 NEAD files are .csv files with an informative metadata header.
 For more information about the NEAD format please see https://www.doi.org/10.16904/envidat.187
 
+This project was based on a Django project that processes Greenland Climate Network weather stations using
+the same Argos satellite system as the Antarctica stations. To reference the original
+source code please see https://github.com/EnviDat/monitoring-backend/tree/master/gcnet
 
 ----------------------
 Warning
@@ -22,7 +25,7 @@ Authors and Contact Information
 ---------------------------------------------
 
     * *Organization*: `Swiss Federal Research Institute WSL <https://www.wsl.ch>`_
-    * *Authors*: Rebecca Buchholz, V.Trotsiuk, Lucia de Espona, Ionut Iosifescu, Derek Houtz
+    * *Authors*: Rebecca Buchholz and V.Trotsiuk
     * *Contact Email*: envidat(at)wsl.ch
     * *Date last modified*: April 12, 2022
 
@@ -95,6 +98,9 @@ The "stations.ini" configuration file is in the directory "config".
 All station-specific information and parameters should be specified in "stations.ini".
 To change a calibration parameter it is only necessary to edit this file and restart "main.py" without editing the code.
 
+A new station can be processed by adding a new section to "stations.ini" with the station ID as the section name.
+A new NEAD configuration file will also need to created, please see the next documentation topic, "NEAD Configuration Files".
+
 **[DEFAULT] section**
 
 The [DEFAULT] section contains the base parameters that can be overwritten in the next sections that correspond to single stations.
@@ -158,6 +164,29 @@ Station configuration explanation::
     swnet_pos = <specific calibration for station>
     swnet_neg = <specific calibration for station>
     pressure_offset = <specific calibration for station>
+
+
+----------------------------------
+NEAD Configuration Files
+----------------------------------
+
+NEAD configuration files are in the directory "nead_config".
+
+These files are used to write the header for the NEAD files.
+For more information about the NEAD format please see https://www.doi.org/10.16904/envidat.187
+
+General information about the data are in the section [METADATA].
+
+The fields used in the data table are described in the section [FIELDS].
+
+The data are inserted in the section [DATA].
+
+This project assumes that each stations's NEAD configuration file will be
+named <station ID>.ini, for example, "10782.ini"
+
+A new station would require its own NEAD configuration file.
+
+A template of an example NEAD configuration file can be found at "nead_config/template_nead_config.ini"
 
 
 -----------------------------------------
