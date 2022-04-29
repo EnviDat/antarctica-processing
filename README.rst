@@ -25,7 +25,7 @@ Authors and Contact Information
 ---------------------------------------------
 
     * *Organization*: `Swiss Federal Research Institute WSL <https://www.wsl.ch>`_
-    * *Authors*: Rebecca Kurup Buchholz and V.Trotsiuk
+    * *Authors*: Rebecca Kurup Buchholz and V. Trotsiuk
     * *Contact Email*: envidat(at)wsl.ch
     * *Date last modified*: April 12, 2022
 
